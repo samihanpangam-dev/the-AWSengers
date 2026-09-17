@@ -1,12 +1,20 @@
 /**
  * api.ts — Omni-File Agent API client
  *
- * Encapsulates all communication with the FastAPI backend so components
- * never construct fetch() calls directly.  Swap the BASE_URL constant to
- * point at a staging or production endpoint without touching any component.
+ * All communication with the FastAPI backend goes through this module.
+ * The backend URL is read from the environment variable NEXT_PUBLIC_API_URL,
+ * which is set per-environment:
+ *
+ *   Local dev    →  .env.local                       → http://localhost:8000
+ *   Vercel prod  →  Vercel dashboard env var         → https://<tunnel>.trycloudflare.com
+ *
+ * No component ever hardcodes a URL.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_AGENT_API_URL ?? 'http://localhost:8000'
+// Strip trailing slash so callers never need to worry about double-slashes.
+const BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+).replace(/\/$/, '')
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -14,7 +22,10 @@ export interface ProcessResponse {
   response: string
 }
 
-/** Structured error returned when the backend replies with a non-2xx status. */
+/**
+ * Thrown when the backend replies with a non-2xx HTTP status.
+ * Carries the status code and FastAPI's `detail` string.
+ */
 export class AgentApiError extends Error {
   constructor(
     public readonly status: number,
@@ -25,18 +36,45 @@ export class AgentApiError extends Error {
   }
 }
 
+/**
+ * Thrown when the network request fails entirely — tunnel down, Mac asleep,
+ * no internet, etc.  Distinct from AgentApiError so the UI can show a
+ * different, more actionable message.
+ */
+export class BackendUnreachableError extends Error {
+  constructor(cause?: unknown) {
+    super('Backend is unreachable')
+    this.name = 'BackendUnreachableError'
+    if (cause instanceof Error) this.cause = cause
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Returns true if the error looks like a network-level failure:
+ * fetch() TypeError, AbortError from timeout, or a Cloudflare 5xx tunnel page.
+ */
+function isNetworkFailure(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'AbortError') return true
+  if (err instanceof TypeError) return true
+  return false
+}
+
 // ── Health check ──────────────────────────────────────────────────────────────
 
 /**
- * Ping GET /health to check whether the backend is reachable.
+ * Ping GET /health.  Returns true if the backend is reachable and healthy.
+ * Used on mount to drive the status indicator in the header.
  *
- * @returns `true` if the backend responds OK, `false` on any error.
+ * Times out after 5 seconds — long enough to handle a cold tunnel wake-up.
  */
 export async function pingBackend(): Promise<boolean> {
   try {
     const res = await fetch(`${BASE_URL}/health`, {
       method: 'GET',
-      signal: AbortSignal.timeout(3_000), // 3-second timeout
+      // Cloudflare tunnels occasionally need a few extra seconds on first hit.
+      signal: AbortSignal.timeout(5_000),
     })
     return res.ok
   } catch {
@@ -49,52 +87,53 @@ export async function pingBackend(): Promise<boolean> {
 /**
  * Send a prompt and zero-or-more files to POST /process.
  *
- * The request is sent as `multipart/form-data` — *never* set the
- * Content-Type header manually; the browser must set it so the boundary
- * parameter is included automatically.
+ * Sent as `multipart/form-data` — do NOT set Content-Type manually.
+ * The browser sets it automatically (including the boundary) when body is FormData.
  *
- * @param prompt  - Natural-language instruction from the user.
- * @param files   - Raw File objects from the drag-and-drop / file-picker.
- *                  Pass an empty array for text-only queries.
+ * @param prompt  Natural-language instruction for the agent.
+ * @param files   Raw File objects from drag-and-drop / file-picker.
+ *                Pass [] for text-only queries.
  *
- * @returns The agent's textual reply.
+ * @returns The agent's textual reply string.
  *
- * @throws {AgentApiError}  When the backend returns 4xx or 5xx.
- * @throws {Error}          On network failure (no connection, CORS, timeout).
- *
- * @example
- * ```ts
- * const reply = await processFiles('Merge all the PDFs', rawFiles)
- * console.log(reply) // "Done! Merged 3 PDFs → merged.pdf"
- * ```
+ * @throws {BackendUnreachableError}  Network failure / tunnel down / Mac asleep.
+ * @throws {AgentApiError}            Backend returned 4xx or 5xx.
  */
 export async function processFiles(
   prompt: string,
   files: File[],
 ): Promise<string> {
   const body = new FormData()
-
-  // Field names must match the FastAPI endpoint parameter names exactly.
   body.append('prompt', prompt)
   for (const file of files) {
+    // Append under the field name "files" to match the FastAPI parameter name.
     body.append('files', file, file.name)
   }
 
-  const res = await fetch(`${BASE_URL}/process`, {
-    method: 'POST',
-    // ⚠️  Do NOT set Content-Type here — the browser adds the multipart
-    //     boundary automatically when body is a FormData instance.
-    body,
-  })
+  let res: Response
+  try {
+    res = await fetch(`${BASE_URL}/process`, {
+      method: 'POST',
+      body,
+      // No explicit timeout here — file processing can take 10-30 s.
+      // The processing bubble in the UI communicates progress to the user.
+    })
+  } catch (err) {
+    // fetch() itself threw — network is down, tunnel is closed, CORS preflight
+    // hard-failed, or the Mac went to sleep mid-request.
+    if (isNetworkFailure(err)) {
+      throw new BackendUnreachableError(err)
+    }
+    throw err
+  }
 
   if (!res.ok) {
-    // FastAPI error bodies follow { "detail": string }
     let detail = `HTTP ${res.status}`
     try {
       const json = (await res.json()) as { detail?: string }
       detail = json.detail ?? detail
     } catch {
-      // response body wasn't JSON — keep the status string
+      // Non-JSON error body — keep the status string.
     }
     throw new AgentApiError(res.status, detail)
   }

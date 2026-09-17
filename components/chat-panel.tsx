@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, ArrowUp, Bot, Terminal, User, Wifi, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AgentApiError, pingBackend, processFiles } from '@/lib/api'
+import { AgentApiError, BackendUnreachableError, pingBackend, processFiles } from '@/lib/api'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -43,9 +43,12 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // ── Backend liveness probe ─────────────────────────────────────────────────
-  // Runs once on mount so the header badge reflects real connectivity.
+  // Runs once on mount, then every 30 s so the badge self-heals when the
+  // tunnel comes back up without requiring a page refresh.
   useEffect(() => {
     pingBackend().then(setBackendOnline)
+    const id = setInterval(() => pingBackend().then(setBackendOnline), 30_000)
+    return () => clearInterval(id)
   }, [])
 
   // ── Auto-scroll ────────────────────────────────────────────────────────────
@@ -86,17 +89,19 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
       // ── Error handling ─────────────────────────────────────────────────────
       let errorText: string
 
-      if (err instanceof AgentApiError) {
-        // HTTP 4xx / 5xx with a detail string from FastAPI.
+      if (err instanceof BackendUnreachableError) {
+        // Tunnel is down, Mac is asleep, or no internet.
+        errorText =
+          '🔌 Cannot reach the backend. The Cloudflare tunnel may be down or ' +
+          'the Mac running the agent may be asleep. Ask the host to restart ' +
+          'the tunnel, then try again.'
+        setBackendOnline(false)
+      } else if (err instanceof AgentApiError) {
+        // HTTP 4xx / 5xx with a FastAPI detail string.
         errorText =
           err.status === 400
             ? `🛡️ Guardrail blocked: ${err.detail}`
             : `Server error (${err.status}): ${err.detail}`
-      } else if (err instanceof TypeError && (err.message.includes('fetch') || err.message.includes('Failed'))) {
-        // Network failure — backend unreachable.
-        errorText =
-          'Cannot reach the backend. Make sure `uvicorn backend.main:app --reload --port 8000` is running.'
-        setBackendOnline(false)
       } else {
         errorText = `Unexpected error: ${err instanceof Error ? err.message : String(err)}`
       }
@@ -133,14 +138,18 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
       {backendOnline === false && (
         <div
           role="alert"
-          className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-6 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
+          className="flex items-center justify-between gap-2 border-b border-amber-200 bg-amber-50 px-6 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
         >
-          <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
-          Backend offline — run{' '}
-          <code className="rounded bg-amber-100 px-1 dark:bg-amber-900/60">
-            uvicorn backend.main:app --reload --port 8000
-          </code>{' '}
-          to enable agent responses.
+          <span className="flex items-center gap-2">
+            <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+            Backend unreachable — the Cloudflare tunnel may be down or the host Mac is asleep.
+          </span>
+          <button
+            onClick={() => pingBackend().then(setBackendOnline)}
+            className="shrink-0 rounded border border-amber-300 bg-amber-100 px-2 py-0.5 font-medium hover:bg-amber-200 dark:border-amber-700 dark:bg-amber-900/50 dark:hover:bg-amber-900"
+          >
+            Retry
+          </button>
         </div>
       )}
 

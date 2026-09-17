@@ -27,7 +27,7 @@ from pathlib import Path
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from .config import CORS_ORIGINS, UPLOAD_TMP_DIR
+from .config import UPLOAD_TMP_DIR
 from .guardrail import GuardrailException
 from .agent import agent
 
@@ -51,17 +51,28 @@ app = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-# Allow the v0.dev / Next.js dev server to call this API from the browser.
+# allow_origins=["*"] so that:
+#   • The Vercel-deployed frontend (unknown subdomain) can call this server.
+#   • Teammates' browsers are never blocked regardless of their origin.
+#   • The Cloudflare tunnel URL doesn't need to be hardcoded here.
+#
+# NOTE: allow_credentials=True is intentionally omitted — browsers reject
+# credentialed requests when allow_origins=["*"].  We don't use cookies or
+# Authorization headers, so this is fine.
+#
+# When you are ready to lock this down for production, replace ["*"] with an
+# explicit list and re-enable allow_credentials=True:
+#   allow_origins=["https://your-app.vercel.app"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,           # must be False when allow_origins=["*"]
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
-logger.info("CORS enabled for origins: %s", CORS_ORIGINS)
+logger.info("CORS enabled for all origins (*) — tunnel / Vercel mode")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
