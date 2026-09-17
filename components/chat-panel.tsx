@@ -1,30 +1,54 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUp, Bot, Terminal, User } from 'lucide-react'
+import { AlertTriangle, ArrowUp, Bot, Terminal, User, Wifi, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AgentApiError, pingBackend, processFiles } from '@/lib/api'
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type ChatMessage = {
   id: string
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'error'
   content: string
 }
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'welcome',
     role: 'assistant',
     content:
-      "Hi! I'm your Omni-File agent. Drop a PDF, video, audio, or image in the sidebar and ask me anything about it — I'll run a code interpreter to analyze it.",
+      "Hi! I'm your Omni-File agent. Drop a PDF, video, audio, or image in the sidebar and ask me anything about it — I'll run a code interpreter to analyse it.",
   },
 ]
 
-export function ChatPanel({ fileCount }: { fileCount: number }) {
+// ── Component ─────────────────────────────────────────────────────────────────
+
+interface ChatPanelProps {
+  fileCount: number
+  /**
+   * Real File objects from the sidebar, forwarded to the API call.
+   * Empty array when only placeholder / sample files are loaded.
+   */
+  rawFiles: File[]
+}
+
+export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
   const [input, setInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [backendOnline, setBackendOnline] = useState<boolean | null>(null) // null = checking
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // ── Backend liveness probe ─────────────────────────────────────────────────
+  // Runs once on mount so the header badge reflects real connectivity.
+  useEffect(() => {
+    pingBackend().then(setBackendOnline)
+  }, [])
+
+  // ── Auto-scroll ────────────────────────────────────────────────────────────
   useEffect(() => {
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
@@ -32,7 +56,8 @@ export function ChatPanel({ fileCount }: { fileCount: number }) {
     })
   }, [messages, isProcessing])
 
-  function handleSubmit(e: React.FormEvent) {
+  // ── Submit handler ─────────────────────────────────────────────────────────
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const text = input.trim()
     if (!text || isProcessing) return
@@ -46,25 +71,49 @@ export function ChatPanel({ fileCount }: { fileCount: number }) {
     setInput('')
     setIsProcessing(true)
 
-    // Mock backend work: simulate the code interpreter processing the file.
-    window.setTimeout(() => {
+    try {
+      // ── Real API call ──────────────────────────────────────────────────────
+      // Sends prompt + all real File objects as multipart/form-data.
+      const reply = await processFiles(text, rawFiles)
+
       setMessages((prev) => [
         ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content:
-            fileCount > 0
-              ? "Done. I parsed your asset with the code interpreter, extracted its structure, and summarized the key contents. Ask a follow-up to dig deeper into any section."
-              : "I can help once you add a file. Drop a PDF, MP4, MP3, or JPG in the sidebar and I'll process it for you.",
-        },
+        { id: crypto.randomUUID(), role: 'assistant', content: reply },
       ])
+      // Mark backend as online after a successful call.
+      setBackendOnline(true)
+    } catch (err) {
+      // ── Error handling ─────────────────────────────────────────────────────
+      let errorText: string
+
+      if (err instanceof AgentApiError) {
+        // HTTP 4xx / 5xx with a detail string from FastAPI.
+        errorText =
+          err.status === 400
+            ? `🛡️ Guardrail blocked: ${err.detail}`
+            : `Server error (${err.status}): ${err.detail}`
+      } else if (err instanceof TypeError && (err.message.includes('fetch') || err.message.includes('Failed'))) {
+        // Network failure — backend unreachable.
+        errorText =
+          'Cannot reach the backend. Make sure `uvicorn backend.main:app --reload --port 8000` is running.'
+        setBackendOnline(false)
+      } else {
+        errorText = `Unexpected error: ${err instanceof Error ? err.message : String(err)}`
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: 'error', content: errorText },
+      ])
+    } finally {
       setIsProcessing(false)
-    }, 2600)
+    }
   }
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-background">
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
         <div className="flex items-center gap-3">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
@@ -72,10 +121,7 @@ export function ChatPanel({ fileCount }: { fileCount: number }) {
           </span>
           <div className="leading-tight">
             <h1 className="text-sm font-semibold">Omni-File AI Agent</h1>
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="size-1.5 rounded-full bg-emerald-400" />
-              Code interpreter online
-            </p>
+            <BackendStatusLine online={backendOnline} />
           </div>
         </div>
         <span className="hidden rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground sm:inline">
@@ -83,6 +129,22 @@ export function ChatPanel({ fileCount }: { fileCount: number }) {
         </span>
       </header>
 
+      {/* ── Offline warning banner ──────────────────────────────────────────── */}
+      {backendOnline === false && (
+        <div
+          role="alert"
+          className="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-6 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300"
+        >
+          <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+          Backend offline — run{' '}
+          <code className="rounded bg-amber-100 px-1 dark:bg-amber-900/60">
+            uvicorn backend.main:app --reload --port 8000
+          </code>{' '}
+          to enable agent responses.
+        </div>
+      )}
+
+      {/* ── Message list ───────────────────────────────────────────────────── */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 md:px-6">
           {messages.map((message) => (
@@ -92,6 +154,7 @@ export function ChatPanel({ fileCount }: { fileCount: number }) {
         </div>
       </div>
 
+      {/* ── Input bar ──────────────────────────────────────────────────────── */}
       <div className="sticky bottom-0 border-t border-border bg-background/80 backdrop-blur">
         <form
           onSubmit={handleSubmit}
@@ -131,12 +194,54 @@ export function ChatPanel({ fileCount }: { fileCount: number }) {
   )
 }
 
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function BackendStatusLine({ online }: { online: boolean | null }) {
+  if (online === null) {
+    return (
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <span className="size-1.5 animate-pulse rounded-full bg-muted-foreground/60" />
+        Checking backend…
+      </p>
+    )
+  }
+  return online ? (
+    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span className="size-1.5 rounded-full bg-emerald-400" />
+      <Wifi className="size-3" aria-hidden="true" />
+      Agent online
+    </p>
+  ) : (
+    <p className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+      <span className="size-1.5 rounded-full bg-amber-400" />
+      <WifiOff className="size-3" aria-hidden="true" />
+      Backend offline
+    </p>
+  )
+}
+
 function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user'
+  const isError = message.role === 'error'
+
+  if (isError) {
+    return (
+      <div
+        role="alert"
+        className="flex items-start gap-3"
+      >
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-amber-300 bg-amber-50 text-amber-600 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-400">
+          <AlertTriangle className="size-4" aria-hidden="true" />
+        </span>
+        <div className="max-w-[80%] rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm leading-relaxed text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          {message.content}
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div
-      className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`}
-    >
+    <div className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
       <span
         className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${
           isUser
@@ -172,7 +277,7 @@ function ProcessingBubble() {
       <div className="w-full max-w-[80%] rounded-2xl border border-border bg-card px-4 py-3">
         <div className="flex items-center gap-2 text-sm text-foreground">
           <span className="size-3.5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-          <span>Executing Code Interpreter to process your file...</span>
+          <span>Executing Code Interpreter to process your file…</span>
         </div>
         <div className="mt-3 space-y-2">
           <div className="h-2.5 w-4/5 animate-pulse rounded bg-muted" />
