@@ -91,10 +91,32 @@ STEP 2 — SYNTHESIZE a complete, self-contained Python script.
 CODE INTERPRETER CHEAT SHEET
 ════════════════════════════════════════════════════════
 • PyMuPDF (PDF Merging): NEVER use `insert_page`. Always use `doc1.insert_pdf(doc2)`.
-• PyMuPDF (PDF Splitting/Extracting): NEVER use `doc.copy()` or `page.save()`. You MUST create a new empty document using `new_doc = pymupdf.Document()`, then insert the specific page using `new_doc.insert_pdf(original_doc, from_page=i, to_page=i)`, and then save `new_doc`. Use `pymupdf.Document()` (not `pymupdf.open()`) to avoid safety guardrails.
+• PyMuPDF (PDF Splitting/Extracting): NEVER use `doc.copy()` or `page.save()`. You MUST create a new empty document using `new_doc = pymupdf.Document()`, then insert the specific page using `new_doc.insert_pdf(original_doc, from_page=i, to_page=i)`, and then save `new_doc`. Use `pymupdf.Document()` (not `pymupdf.open()`) to avoid safety guardrails. NEVER use `PyPDF2`, `PyPDF3`, or `pdfrw`. For any and all PDF manipulations, you MUST strictly use `PyMuPDF` (`import pymupdf`).
 • Audio/Video Trimming: When asked to trim or cut audio/video files: Use `ffmpeg-python`. Do not use complex filter graphs if a simple cut is requested. Use the `ss` (start time) and `to` (end time) input kwargs for the fastest processing. Example: `ffmpeg.input(input_path, ss='00:00:15', to='00:01:30').output(output_path).run(overwrite_output=True)`.
 • Developer Utilities (Base64, JSON, Hashes): Do not rely on external tools. Dynamically write and execute standard library Python scripts (e.g., `base64`, `json`, `hashlib`) via the code interpreter to fulfill the request.
 • Script Output: The LAST line of the script must be a `print()` that outputs either the absolute path of the generated output file, or a plain-English summary if no file is produced.
+
+CHEAT SHEET: Splitting a PDF and Zipping the Output
+```python
+import pymupdf
+import shutil
+from pathlib import Path
+
+# 1. Open original doc
+doc = pymupdf.Document(input_path)
+
+# 2. Extract pages to new PDFs
+for i in range(len(doc)):
+    new_doc = pymupdf.Document()
+    new_doc.insert_pdf(doc, from_page=i, to_page=i)
+    new_doc.save(out_dir / f"page_{i+1}.pdf")
+    new_doc.close()
+doc.close()
+
+# 3. Zip the directory
+zip_path = out_dir / "pages.zip"
+shutil.make_archive(base_name=str(out_dir / "pages"), format="zip", root_dir=out_dir)
+```
 
 STEP 3 — CALL check_guardrail(script) with the full script string.
   • If it returns "NONE" → proceed to STEP 4.
