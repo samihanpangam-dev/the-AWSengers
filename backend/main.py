@@ -159,10 +159,15 @@ async def process(
 
     try:
         # ── 1. Persist uploads to an isolated temp directory ──────────────────
+        import asyncio
+        def _save_upload(upload_file, dest_path):
+            with open(dest_path, "wb") as f:
+                shutil.copyfileobj(upload_file.file, f)
+
         for upload in files:
             safe_name = Path(upload.filename or "unnamed").name
             dest = tmp_dir / safe_name
-            dest.write_bytes(await upload.read())
+            await asyncio.to_thread(_save_upload, upload, dest)
             saved.append((safe_name, str(dest)))
             logger.info(
                 "request=%s  saved %s (%d bytes)",
@@ -190,8 +195,20 @@ async def process(
 
         # ── 4. Run the Strands Agent ──────────────────────────────────────────
         logger.info("request=%s  invoking agent…", request_id)
-        async with agent_lock:
-            result = await asyncio.to_thread(agent, enriched)
+        
+        async def _run_safely():
+            async with agent_lock:
+                return await asyncio.to_thread(agent, enriched)
+                
+        try:
+            # We shield the execution so that if the user refreshes the page 
+            # (canceling the request), the agent finishes its current run 
+            # while HOLDING the lock, preventing concurrent 500 crashes.
+            result = await asyncio.shield(_run_safely())
+        except asyncio.CancelledError:
+            logger.warning("request=%s  client disconnected, but agent continues in background", request_id)
+            raise
+
         response_text = str(result)
         logger.info(
             "request=%s  agent replied (%d chars)",
