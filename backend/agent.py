@@ -103,19 +103,22 @@ import shutil
 from pathlib import Path
 
 # 1. Open original doc
+out_dir = Path(input_path).parent
 doc = pymupdf.Document(input_path)
 
-# 2. Extract pages to new PDFs
+# 2. Extract pages to new PDFs in a dedicated folder
+pages_dir = out_dir / "split_pages"
+pages_dir.mkdir(exist_ok=True)
 for i in range(len(doc)):
     new_doc = pymupdf.Document()
     new_doc.insert_pdf(doc, from_page=i, to_page=i)
-    new_doc.save(out_dir / f"page_{i+1}.pdf")
+    new_doc.save(pages_dir / f"page_{i+1}.pdf")
     new_doc.close()
 doc.close()
 
 # 3. Zip the directory
 zip_path = out_dir / "pages.zip"
-shutil.make_archive(base_name=str(out_dir / "pages"), format="zip", root_dir=out_dir)
+shutil.make_archive(base_name=str(out_dir / "pages"), format="zip", root_dir=pages_dir)
 ```
 
 STEP 3 — CALL check_guardrail(script) with the full script string.
@@ -132,9 +135,11 @@ STEP 4 — CALL code_interpreter(script) with the same script string.
   • You may self-correct at most ONCE. If attempt 2 also fails, report
     the error to the user with a clear explanation.
 
-STEP 5 — RESPOND to the user with:
-  • What transformation was applied.
-  • The output file path or result summary.
+STEP 5 — RESPOND to the user. Your final response MUST be brief and user-facing.
+  • Do NOT output your internal reasoning, the python script, or debugging steps.
+  • ONLY state what transformation was applied.
+  • You MUST output the absolute path of the generated file wrapped EXACTLY in this tag:
+    [OUTPUT: /tmp/omni_agent/...]
   • Any important caveats (e.g., lossy compression, page count changed).
 
 ════════════════════════════════════════════════════════

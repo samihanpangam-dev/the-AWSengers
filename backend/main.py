@@ -218,15 +218,22 @@ async def process(
         # Extract download URL if agent produced an output file
         import re
         download_url = None
-        # Match paths in /tmp_dir/filename
-        match = re.search(rf"{re.escape(str(tmp_dir))}/([^\s\"'`]+)", response_text)
+        
+        # Match [OUTPUT: /tmp/omni_agent/<uuid>/filename]
+        match = re.search(r'\[OUTPUT:\s*([^\]]+)\]', response_text)
         if match:
-            filename = match.group(1)
-            download_url = f"/download/{request_id}/{filename}"
-            # Clean up the raw path from the response text
-            response_text = response_text.replace(match.group(0), "the downloaded file below")
-            
-        return {"response": response_text, "download_url": download_url}
+            full_path = match.group(1).strip()
+            # Verify the path is within tmp_dir
+            if full_path.startswith(str(tmp_dir)):
+                filename = Path(full_path).name
+                download_url = f"/download/{request_id}/{filename}"
+                # Clean up the raw path from the response text
+                response_text = response_text.replace(match.group(0), "")
+                
+        # Fallback: remove any residual /tmp/omni_agent/... paths the agent might have leaked
+        response_text = re.sub(rf"{re.escape(str(tmp_dir))}/[^\s\"'`]+", "", response_text)
+        
+        return {"response": response_text.strip(), "download_url": download_url}
 
     except GuardrailException as exc:
         logger.warning(

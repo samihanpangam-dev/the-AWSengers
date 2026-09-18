@@ -42,6 +42,8 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null) // null = checking
+  const [showTrimmer, setShowTrimmer] = useState(false)
+  const [trimPendingText, setTrimPendingText] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // ── Backend liveness probe ─────────────────────────────────────────────────
@@ -62,10 +64,20 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
   }, [messages, isProcessing])
 
   // ── Submit handler ─────────────────────────────────────────────────────────
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const text = input.trim()
+  async function handleSubmit(e?: React.FormEvent, overrideText?: string) {
+    if (e) e.preventDefault()
+    const text = overrideText || input.trim()
     if (!text || isProcessing) return
+
+    // ── Trimmer Interception ─────────────────────────────────────────────────
+    // If the user says "trim" or "cut" and there's a media file, intercept!
+    const isTrimIntent = /\b(trim|cut)\b/i.test(text)
+    const hasMediaFile = rawFiles.some(f => f.type.startsWith('audio/') || f.type.startsWith('video/'))
+    if (isTrimIntent && hasMediaFile && !overrideText) {
+      setTrimPendingText(text)
+      setShowTrimmer(true)
+      return
+    }
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -156,7 +168,18 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
       )}
 
       {/* ── Message list ───────────────────────────────────────────────────── */}
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto relative">
+        {showTrimmer && (
+          <MediaTrimmerModal 
+            file={rawFiles.find(f => f.type.startsWith('audio/') || f.type.startsWith('video/'))!}
+            onClose={() => setShowTrimmer(false)}
+            onSubmit={(start, end) => {
+              const finalPrompt = `${trimPendingText}. Trim this file from ${start} to ${end}.`
+              setShowTrimmer(false)
+              handleSubmit(undefined, finalPrompt)
+            }}
+          />
+        )}
         <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 md:px-6">
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
@@ -306,6 +329,130 @@ function ProcessingBubble() {
           <div className="h-2.5 w-3/5 animate-pulse rounded bg-muted" />
           <div className="h-2.5 w-2/3 animate-pulse rounded bg-muted" />
         </div>
+      </div>
+    </div>
+  )
+}
+
+function MediaTrimmerModal({
+  file,
+  onClose,
+  onSubmit
+}: {
+  file: File;
+  onClose: () => void;
+  onSubmit: (start: string, end: string) => void;
+}) {
+  const [duration, setDuration] = useState(0)
+  const [start, setStart] = useState(0)
+  const [end, setEnd] = useState(0)
+  const [mediaUrl, setMediaUrl] = useState('')
+  const mediaRef = useRef<HTMLVideoElement & HTMLAudioElement>(null)
+
+  useEffect(() => {
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    setMediaUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+  
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = Math.floor(seconds % 60)
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  }
+
+  return (
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-xl flex flex-col gap-4">
+         <h2 className="text-lg font-semibold">Trim {file?.name}</h2>
+         
+         {/* Live Preview */}
+         <div className="relative w-full rounded-lg overflow-hidden bg-black/5 flex items-center justify-center" style={{ minHeight: 200 }}>
+           {file?.type.startsWith('video/') ? (
+             <video 
+               ref={mediaRef} 
+               src={mediaUrl} 
+               controls 
+               className="max-h-64 w-auto"
+               onLoadedMetadata={(e) => {
+                 setDuration(e.currentTarget.duration)
+                 setEnd(e.currentTarget.duration)
+               }}
+               onTimeUpdate={(e) => {
+                 if (e.currentTarget.currentTime > end) {
+                   e.currentTarget.currentTime = start
+                   e.currentTarget.pause()
+                 }
+               }}
+             />
+           ) : (
+             <audio 
+               ref={mediaRef} 
+               src={mediaUrl} 
+               controls 
+               className="w-full mx-4"
+               onLoadedMetadata={(e) => {
+                 setDuration(e.currentTarget.duration)
+                 setEnd(e.currentTarget.duration)
+               }}
+               onTimeUpdate={(e) => {
+                 if (e.currentTarget.currentTime > end) {
+                   e.currentTarget.currentTime = start
+                   e.currentTarget.pause()
+                 }
+               }}
+             />
+           )}
+         </div>
+
+         {/* Sliders */}
+         {duration > 0 && (
+           <div className="space-y-4 mt-2">
+             <div className="space-y-1.5">
+               <div className="flex justify-between text-xs font-medium">
+                 <span>Start: {formatTime(start)}</span>
+               </div>
+               <input 
+                 type="range" 
+                 min="0" 
+                 max={end - 1} 
+                 value={start} 
+                 onChange={(e) => {
+                   const val = Number(e.target.value)
+                   setStart(val)
+                   if (mediaRef.current) mediaRef.current.currentTime = val
+                 }}
+                 className="w-full accent-primary" 
+               />
+             </div>
+             
+             <div className="space-y-1.5">
+               <div className="flex justify-between text-xs font-medium">
+                 <span>End: {formatTime(end)}</span>
+               </div>
+               <input 
+                 type="range" 
+                 min={start + 1} 
+                 max={duration} 
+                 value={end} 
+                 onChange={(e) => {
+                   const val = Number(e.target.value)
+                   setEnd(val)
+                   if (mediaRef.current) mediaRef.current.currentTime = val
+                 }}
+                 className="w-full accent-primary" 
+               />
+             </div>
+           </div>
+         )}
+
+         {/* Actions */}
+         <div className="mt-4 flex justify-end gap-2">
+            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button onClick={() => onSubmit(formatTime(start), formatTime(end))}>Trim File</Button>
+         </div>
       </div>
     </div>
   )
