@@ -75,6 +75,22 @@ function findMediaFile(files: File[]): File | undefined {
   return files.find(isMediaFile)
 }
 
+function hasTimeIndicators(text: string): boolean {
+  // Matches timestamps with colons (e.g. 00:15, 01:30, 00:01:30, 1:45)
+  if (/\b\d{1,2}:\d{2}(?::\d{2})?\b/.test(text)) return true
+
+  // Matches numeric values with time units (e.g. 10s, 15 sec, 2 mins, 1 hour, 30seconds)
+  if (/\b\d+\s*(?:s|sec|secs|second|seconds|m|min|mins|minute|minutes|h|hr|hrs|hour|hours)\b/i.test(text)) return true
+
+  // Matches range patterns (e.g. "from 10 to 20", "between 5 and 15")
+  if (/\b(?:from|between)\s+\S+\s+(?:to|and)\s+\S+/i.test(text)) return true
+
+  // Matches boundary or position references (e.g. "start at 10", "end at 40", "first 30", "last 15")
+  if (/\b(?:start(?:s|ing)?|end(?:s|ing)?|first|last)\s+(?:at\s+|from\s+)?\d+/i.test(text)) return true
+
+  return false
+}
+
   // ── Submit handler ─────────────────────────────────────────────────────────
   async function handleSubmit(e?: React.FormEvent, overrideText?: string) {
     if (e) e.preventDefault()
@@ -82,10 +98,12 @@ function findMediaFile(files: File[]): File | undefined {
     if (!text || isProcessing) return
 
     // ── Trimmer Interception ─────────────────────────────────────────────────
-    // If the user says "trim" or "cut" and there is an attached media file, offer the visual trimmer!
+    // Only trigger the visual trimmer modal when the user requests a trim WITHOUT
+    // already specifying explicit time/duration parameters in the prompt.
     const isTrimIntent = /\b(trim|cut)\b/i.test(text)
+    const hasExplicitTimes = hasTimeIndicators(text)
     const mediaFile = findMediaFile(rawFiles)
-    if (isTrimIntent && mediaFile && !overrideText) {
+    if (isTrimIntent && mediaFile && !hasExplicitTimes && !overrideText) {
       setTrimPendingText(text)
       setShowTrimmer(true)
       return
