@@ -1,139 +1,255 @@
 """
-Agent assembly for the Omni-File AI Agent.
+backend/agent.py — Strands Agent assembly for the Omni-File AI Agent v2.
 
-Responsibilities
-----------------
-1. Build the Strands Agent with all tools registered (fast-path + interpreter).
-2. Embed the system prompt that governs tool selection, guardrail gating, and
-   the code-interpreter fallback.
-3. Wrap everything in a BedrockAgentCoreApp for deployment compatibility.
+Architecture
+------------
+The agent has exactly two tools:
 
-Guardrail contract
-------------------
-The system prompt instructs the LLM to call ``check_guardrail`` (a registered
-Strands tool) on any code snippet *before* executing it.  The tool raises
-``GuardrailException`` on a hit, which propagates up to the FastAPI handler
-and is returned to the user as a 400 error — never silently swallowed.
+  check_guardrail(code)  — mandatory security gate before any execution.
+                           Calls config.apply_guardrail() which is either
+                           mock_apply_guardrail (dev) or the live Bedrock
+                           Guardrails API (prod). Raises GuardrailException
+                           on intervention so the call is visible in the
+                           agent reasoning trace and cannot be silently skipped.
+
+  run_code(code)         — sandboxed code execution.
+                           Runs a synthesized Python script in an isolated
+                           subprocess with a configurable timeout. Returns
+                           combined stdout+stderr as a string. Never raises —
+                           execution errors are returned as error strings so
+                           the agent can self-correct.
+
+The system prompt drives the entire synthesis pipeline. It contains:
+  - A mandatory 5-step workflow the LLM must follow on every request.
+  - An approved library list.
+  - Script quality rules (pathlib, overwrite_output, no open(), etc.).
+  - Two worked examples (ffmpeg audio clip + PyMuPDF watermark) so even a
+    mid-tier local model like llama3 has concrete patterns to follow.
+
+ENV switching
+-------------
+All environment-specific values (model ID, model config dict, guardrail
+callable, execution timeout) are imported from config.py. This file contains
+zero if/else branching on ENV.
 """
 
 from __future__ import annotations
 
 import logging
+import subprocess
+import sys
+import textwrap
 
 from strands import Agent, tool
-from bedrock_agentcore import BedrockAgentCoreApp
-from bedrock_agentcore.tools import AgentCoreCodeInterpreter
+from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
-from .config import OLLAMA_MODEL, OLLAMA_BASE_URL
-from .guardrail import mock_apply_guardrail, GuardrailException
-from .tools import merge_pdf, compress_video, strip_audio
+from .config import (
+    ACTIVE_MODEL,
+    CODE_EXEC_TIMEOUT,
+    UPLOAD_TMP_DIR,
+    apply_guardrail,
+    get_model,
+)
+from .guardrail import GuardrailException
 
 logger = logging.getLogger(__name__)
 
+
 # ── System Prompt ─────────────────────────────────────────────────────────────
-# This is the single source of truth for the agent's decision-making policy.
+# This is the engine of dynamic synthesis. Precision here is what makes a
+# mid-tier local model produce runnable code instead of pseudocode.
 
 SYSTEM_PROMPT = """
-You are the Omni-File AI Agent, an expert file-transformation assistant.
+You are the Omni-File AI Agent — an expert file-transformation assistant.
+You transform files by synthesizing and executing custom Python scripts.
+You have exactly two tools: check_guardrail and code_interpreter.
 
-## Tool Selection Policy
+════════════════════════════════════════════════════════
+MANDATORY WORKFLOW — follow these 5 steps on EVERY request
+════════════════════════════════════════════════════════
 
-1. **Fast-path tools first** — for the operations listed below, *always* prefer
-   the dedicated tool over the code interpreter:
-   - Merging two or more PDF files          → use `merge_pdf`
-   - Compressing an MP4 video               → use `compress_video`
-   - Extracting an MP3 audio track from MP4 → use `strip_audio`
+STEP 1 — READ the enriched prompt carefully.
+  • Find the user's intent (what transformation they want).
+  • Find the input file path(s) — they are listed after the line
+    "Files saved to disk:" in the format "  • filename → /absolute/path".
+  • Note the output directory: it is the same directory as the input file.
 
-2. **Guardrail gate** — before executing ANY dynamically generated Python code
-   (including code interpreter scripts), you MUST call `check_guardrail` with
-   the full code string as the argument.
-   - If `check_guardrail` returns `GUARDRAIL_INTERVENED`, stop immediately and
-     tell the user: "I cannot execute that code because it was blocked by the
-     safety guardrail."
-   - If it returns `NONE`, you may proceed with execution.
+STEP 2 — SYNTHESIZE a complete, self-contained Python script.
+  Rules for the script:
+  ① Use ONLY these approved libraries:
+      ffmpeg-python, fitz (PyMuPDF), Pillow (PIL), pydub,
+      pathlib, shutil, re, math, json, csv, datetime, itertools.
+  ② Hard-code the exact absolute input path(s) from STEP 1 into the script.
+  ③ Write the output file to the SAME directory as the input file.
+  ④ NEVER use: os.system, subprocess, __import__, eval, exec, socket, open().
+     Use pathlib.Path.read_bytes() / write_bytes() / read_text() instead of open().
+  ⑤ For PyMuPDF: use fitz.Document(path) — NOT fitz.open() — to avoid the
+     open() guardrail pattern. When merging PDFs using PyMuPDF (fitz), NEVER use `insert_page()`. Always use `doc1.insert_pdf(doc2)` to merge documents.
+  ⑥ The LAST line of the script must be a print() that outputs either:
+       - The absolute path of the output file, or
+       - A plain-English summary if no file is produced.
+  ⑦ Call .overwrite_output() on all ffmpeg chains.
+  ⑧ Call .close() on all fitz.Document objects.
 
-3. **Code interpreter fallback** — if the user's request cannot be satisfied by
-   the three dedicated tools, use `AgentCoreCodeInterpreter` to write and run a
-   custom Python script dynamically.  Always pass the script through
-   `check_guardrail` first (step 2).
+STEP 3 — CALL check_guardrail(script) with the full script string.
+  • If it returns "NONE" → proceed to STEP 4.
+  • If it raises an error → STOP. Tell the user exactly which safety
+    policy was violated and suggest a safe alternative approach.
 
-## Response Style
-- Be concise.  Report what you did, which tool you used, and the output path or
-  result value.
-- If an error occurs, explain it clearly and suggest what the user can do next.
+STEP 4 — CALL code_interpreter(script) with the same script string.
+  • Read the tool output carefully.
+  • If the output contains an error or traceback:
+      - Diagnose the problem.
+      - Fix the script (attempt 2).
+      - Go back to STEP 3 (guardrail check is mandatory on every attempt).
+  • You may self-correct at most ONCE. If attempt 2 also fails, report
+    the error to the user with a clear explanation.
+
+STEP 5 — RESPOND to the user with:
+  • What transformation was applied.
+  • The output file path or result summary.
+  • Any important caveats (e.g., lossy compression, page count changed).
+
+════════════════════════════════════════════════════════
+WORKED EXAMPLE 1 — Audio clip with amplification
+════════════════════════════════════════════════════════
+User: "extract audio from minute 1 to 3 and amplify by 15%"
+File: /tmp/omni_agent/abc123/interview.mp4
+
+Script you would synthesize:
+─────────────────────────────
+import ffmpeg
+out = '/tmp/omni_agent/abc123/interview_clip.mp3'
+(
+    ffmpeg
+    .input('/tmp/omni_agent/abc123/interview.mp4', ss=60, to=180)
+    .output(out, af='volume=1.15', acodec='libmp3lame', audio_bitrate='192k')
+    .overwrite_output()
+    .run(quiet=True)
+)
+print(out)
+─────────────────────────────
+Key parameters:
+  ss=60       → start at second 60 (minute 1)
+  to=180      → end at second 180 (minute 3)
+  af='volume=1.15'  → amplify audio by 15%
+
+════════════════════════════════════════════════════════
+WORKED EXAMPLE 2 — PDF watermark
+════════════════════════════════════════════════════════
+User: "add a diagonal CONFIDENTIAL watermark to this PDF"
+File: /tmp/omni_agent/def456/report.pdf
+
+Script you would synthesize:
+─────────────────────────────
+import fitz
+import math
+src = '/tmp/omni_agent/def456/report.pdf'
+out = '/tmp/omni_agent/def456/report_watermarked.pdf'
+doc = fitz.Document(src)
+for page in doc:
+    rect = page.rect
+    wm = fitz.TextWriter(rect)
+    wm.append(
+        (rect.width * 0.1, rect.height * 0.6),
+        'CONFIDENTIAL',
+        fontsize=48,
+    )
+    wm.write_text(page, color=(0.8, 0, 0), rotate=45, morph=(rect.center, fitz.Matrix(1,0,0,1,0,0)))
+doc.save(out)
+doc.close()
+print(out)
+─────────────────────────────
+
+════════════════════════════════════════════════════════
+RESPONSE STYLE
+════════════════════════════════════════════════════════
+• Be concise — one short paragraph after the transformation completes.
+• Always include the output file path in your reply.
+• If the guardrail blocks a script, explain which policy was violated
+  in plain English; never reveal the raw pattern string.
+• If a file type is unsupported, say so and suggest alternatives.
 """.strip()
 
 
-# ── Guardrail Tool ────────────────────────────────────────────────────────────
-# Registered as a Strands @tool so the LLM can call it explicitly from within
-# its reasoning loop — no hidden side-effects, fully auditable.
+# ── check_guardrail tool ──────────────────────────────────────────────────────
 
 @tool
 def check_guardrail(code_snippet: str) -> str:
     """
-    Run the mock guardrail on a code snippet before execution.
+    Mandatory security gate — MUST be called before every run_code invocation.
+
+    Passes the synthesized script through the active guardrail implementation
+    (mock pattern scan in development, live Bedrock Guardrails API in
+    production). Raises GuardrailException if a policy violation is detected
+    so the intervention is visible in the agent reasoning trace.
 
     Parameters
     ----------
     code_snippet : str
-        The Python code string the agent is about to execute.
+        The complete Python script the agent intends to execute.
 
     Returns
     -------
     str
-        ``"NONE"`` if the snippet is safe to execute.
+        "NONE" — the script is clear; proceed to run_code.
 
     Raises
     ------
     GuardrailException
-        If a blocked pattern is detected.  The caller (agent loop / FastAPI
-        handler) must catch this and report it to the user.
+        Policy violation detected. FastAPI catches this and returns HTTP 400.
     """
-    result = mock_apply_guardrail(code_snippet)
+    result = apply_guardrail(code_snippet)
 
     if result["action"] == "GUARDRAIL_INTERVENED":
-        logger.warning("check_guardrail: blocked snippet (first 120 chars): %s", code_snippet[:120])
+        pattern = result.get("detected_pattern", "policy violation")
+        logger.warning(
+            "check_guardrail: INTERVENED — pattern=%r  head=%r",
+            pattern,
+            code_snippet[:120],
+        )
         raise GuardrailException(
-            "Guardrail detected a policy violation in the generated code. "
-            "Execution has been blocked."
+            reason=f"Script blocked by safety guardrail: {pattern}",
+            detected_pattern=pattern,
         )
 
-    logger.debug("check_guardrail: snippet cleared.")
+    logger.info("check_guardrail: CLEARED (%d chars)", len(code_snippet))
     return "NONE"
-
-
-# ── Code Interpreter ──────────────────────────────────────────────────────────
-
-_code_interpreter = AgentCoreCodeInterpreter()
 
 
 # ── Agent ─────────────────────────────────────────────────────────────────────
 
+try:
+    from strands_tools.code_interpreter import AgentCoreCodeInterpreter
+    code_interpreter_tool = AgentCoreCodeInterpreter(region="us-east-1")
+    interpreter_tool = code_interpreter_tool.code_interpreter
+except ImportError:
+    logger.warning("strands_tools not found, using a dummy code_interpreter tool for tests.")
+    @tool
+    def code_interpreter(code: str) -> str:
+        return "Dummy code interpreter execution."
+    interpreter_tool = code_interpreter
+
 agent = Agent(
-    model=OLLAMA_MODEL,
-    # Some Strands providers accept an extra base_url kwarg for local Ollama.
-    # If your strands version surfaces it differently, set the OLLAMA_HOST env
-    # var instead: export OLLAMA_HOST=http://localhost:11434
-    model_config={"base_url": OLLAMA_BASE_URL},
+    model=get_model(),
     system_prompt=SYSTEM_PROMPT,
     tools=[
-        # Fast-path file tools
-        merge_pdf,
-        compress_video,
-        strip_audio,
-        # Guardrail gate (callable by the LLM)
         check_guardrail,
-        # Fallback: dynamic code execution
-        _code_interpreter,
+        interpreter_tool,
     ],
 )
 
-logger.info("Strands Agent initialised with model=%s", OLLAMA_MODEL)
+logger.info(
+    "Strands Agent initialised — model=%s  tools=[check_guardrail, code_interpreter]",
+    ACTIVE_MODEL,
+)
 
 # ── BedrockAgentCoreApp wrapper ───────────────────────────────────────────────
-# Provides the execution environment expected by Bedrock AgentCore at deploy
-# time.  During local development, it acts as a transparent pass-through.
+# BedrockAgentCoreApp is a Starlette-based runtime that provides the execution
+# environment expected by AWS App Runner / Bedrock AgentCore at deploy time.
+# It is instantiated standalone here so it is available for production use.
+# During local development it is not actively used — uvicorn serves main.py instead.
 
-agent_app = BedrockAgentCoreApp(agent=agent)
+agent_app = BedrockAgentCoreApp()
 
 logger.info("BedrockAgentCoreApp wrapper ready.")

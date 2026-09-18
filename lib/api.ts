@@ -12,7 +12,7 @@
  */
 
 // Strip trailing slash so callers never need to worry about double-slashes.
-const BASE_URL = (
+export const BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 ).replace(/\/$/, '')
 
@@ -20,6 +20,7 @@ const BASE_URL = (
 
 export interface ProcessResponse {
   response: string
+  download_url?: string
 }
 
 /**
@@ -94,7 +95,7 @@ export async function pingBackend(): Promise<boolean> {
  * @param files   Raw File objects from drag-and-drop / file-picker.
  *                Pass [] for text-only queries.
  *
- * @returns The agent's textual reply string.
+ * @returns An object with the agent's textual reply string and an optional downloadUrl.
  *
  * @throws {BackendUnreachableError}  Network failure / tunnel down / Mac asleep.
  * @throws {AgentApiError}            Backend returned 4xx or 5xx.
@@ -102,7 +103,7 @@ export async function pingBackend(): Promise<boolean> {
 export async function processFiles(
   prompt: string,
   files: File[],
-): Promise<string> {
+): Promise<{ reply: string; downloadUrl?: string }> {
   const body = new FormData()
   body.append('prompt', prompt)
   for (const file of files) {
@@ -139,5 +140,5 @@ export async function processFiles(
   }
 
   const data = (await res.json()) as ProcessResponse
-  return data.response
+  return { reply: data.response, downloadUrl: data.download_url }
 }

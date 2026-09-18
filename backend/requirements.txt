@@ -1,12 +1,15 @@
-# Dependency versions verified conflict-free on 2026-09-17.
-# bedrock-agentcore>=1.x requires starlette>=0.46.2, which is satisfied by
-# fastapi>=0.116.0 — so both are unpinned to let pip pick the latest compatible set.
+# Dependency versions verified conflict-free.
+# bedrock-agentcore >=1.x requires starlette>=0.46.2, satisfied by fastapi>=0.116.0.
+# Pillow and pydub added for dynamic synthesis scripts (referenced in system prompt).
 
 fastapi
 uvicorn[standard]
 python-multipart
 strands-agents
+strands-tools
 bedrock-agentcore
 pymupdf
 ffmpeg-python
 ollama
+Pillow
+pydub

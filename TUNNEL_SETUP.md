@@ -23,8 +23,12 @@ pip install -r backend/requirements.txt
 ### 3. Install Ollama + pull the model (if not done yet)
 ```bash
 brew install ollama
-ollama pull llama3
+ollama pull llama3.1
 ```
+
+> **Why llama3.1 and not llama3?** The original `llama3` does not support tool/function calling,
+> which the Strands agent requires to invoke `check_guardrail` and `run_code`.
+> `llama3.1` adds native tool calling. Alternatives if you prefer: `qwen2.5`, `qwen3`, `mistral`.
 
 ---
 

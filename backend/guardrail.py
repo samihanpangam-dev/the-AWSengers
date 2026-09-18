@@ -1,61 +1,90 @@
 """
-Mock Guardrail — simulates Amazon Bedrock Guardrails for demo / CI purposes.
+backend/guardrail.py — Mock Bedrock Guardrails (development mode).
 
-Production swap-out:
-    Replace `mock_apply_guardrail` with a call to the real Bedrock Guardrails
-    API (bedrock-runtime.apply_guardrail) without touching any other module.
+In ENV=production this module is NOT called directly. config.py wires
+apply_guardrail to the real boto3 bedrock-runtime.apply_guardrail call.
+
+In ENV=development config.py imports mock_apply_guardrail from here as
+apply_guardrail, so the rest of the codebase never needs to know which
+implementation is active.
 """
 
 from __future__ import annotations
 
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
-# Patterns that trigger the guardrail.
-# "AKIA"                          → AWS IAM access-key prefix (secret leak)
-# "ignore all previous instructions" → classic prompt-injection string
-_BLOCKED_PATTERNS: list[str] = [
-    "AKIA",
-    "ignore all previous instructions",
+
+# ── Blocked pattern registry ──────────────────────────────────────────────────
+#
+# Each entry: (pattern_string, human_readable_violation_name)
+# Matched as plain substrings (case-sensitive).
+
+_BLOCKED_PATTERNS: list[tuple[str, str]] = [
+    ("os.system(",    "Dangerous shell execution (os.system)"),
+    ("subprocess.",   "Subprocess spawning (subprocess.*)"),
+    ("__import__(",   "Dynamic import bypass (__import__)"),
+    ("eval(",         "Code injection via eval()"),
+    ("exec(",         "Code injection via exec()"),
+    ("socket.",       "Raw network access (socket.*)"),
+    ("AKIA",          "Potential AWS credential (AKIA prefix)"),
+    ("ignore all previous instructions", "Prompt injection attempt"),
+    # NOTE: open() is handled separately below via regex so that
+    # fitz.open(), PIL.Image.open() etc. are NOT false-positives.
 ]
 
+# ── Exception ─────────────────────────────────────────────────────────────────
 
 class GuardrailException(Exception):
-    """Raised when the guardrail intervenes; carries a human-readable reason."""
+    """
+    Raised by check_guardrail() in agent.py when the guardrail intervenes.
+    Carries a human-readable reason and the name of the matched pattern.
+    """
 
-    def __init__(self, reason: str) -> None:
+    def __init__(self, reason: str, detected_pattern: str = "") -> None:
         super().__init__(reason)
         self.reason = reason
+        self.detected_pattern = detected_pattern
 
+
+# ── Core function ─────────────────────────────────────────────────────────────
 
 def mock_apply_guardrail(code_snippet: str) -> dict[str, str]:
     """
-    Inspect *code_snippet* for policy violations.
-
-    Returns
-    -------
-    {"action": "NONE"}
-        The snippet is safe to execute.
-    {"action": "GUARDRAIL_INTERVENED"}
-        A blocked pattern was detected; execution must be aborted.
-
-    The caller is responsible for raising ``GuardrailException`` when the
-    action is ``"GUARDRAIL_INTERVENED"``.
-
-    Examples
-    --------
-    >>> mock_apply_guardrail("print('hello')")
-    {'action': 'NONE'}
-    >>> mock_apply_guardrail("key = 'AKIAIOSFODNN7EXAMPLE'")
-    {'action': 'GUARDRAIL_INTERVENED'}
+    Scan *code_snippet* for policy violations.
     """
-    for pattern in _BLOCKED_PATTERNS:
+    # ── 1. Explicit Whitelists (PyMuPDF and ffmpeg) ───────────────────────────
+    # We allow these specific patterns unconditionally if they are the only file handling.
+    whitelisted_patterns = ["fitz.open", "ffmpeg.input", "ffmpeg.output", "fitz.Document"]
+    # We do not return "NONE" immediately because we still need to check for dangerous commands.
+
+    # ── 2. Plain substring patterns ───────────────────────────────────────────
+    for pattern, violation_name in _BLOCKED_PATTERNS:
         if pattern in code_snippet:
             logger.warning(
-                "Guardrail intervened — blocked pattern detected: %r", pattern
+                "Guardrail intervened — pattern=%r  violation=%r  head=%r",
+                pattern, violation_name, code_snippet[:120],
             )
-            return {"action": "GUARDRAIL_INTERVENED"}
+            return {
+                "action": "GUARDRAIL_INTERVENED",
+                "detected_pattern": violation_name,
+            }
 
-    logger.debug("Guardrail passed — no blocked patterns found.")
+    # ── 3. Standalone open() check (regex) ────────────────────────────────────
+    # Regex ensures we don't catch fitz.open( or PIL.Image.open(
+    _STANDALONE_OPEN_RE = re.compile(r'(?<!\.)(?<!\w)open\s*\(')
+    if _STANDALONE_OPEN_RE.search(code_snippet):
+        violation_name = "Standalone open() call — use pathlib.Path or library APIs instead"
+        logger.warning(
+            "Guardrail intervened — standalone open() detected  head=%r",
+            code_snippet[:120],
+        )
+        return {
+            "action": "GUARDRAIL_INTERVENED",
+            "detected_pattern": violation_name,
+        }
+
+    logger.debug("Guardrail passed — snippet length=%d chars", len(code_snippet))
     return {"action": "NONE"}

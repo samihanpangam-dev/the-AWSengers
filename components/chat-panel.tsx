@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { AlertTriangle, ArrowUp, Bot, Terminal, User, Wifi, WifiOff } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { AgentApiError, BackendUnreachableError, pingBackend, processFiles } from '@/lib/api'
+import { AlertTriangle, ArrowUp, Bot, Terminal, User, Wifi, WifiOff, Download } from 'lucide-react'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { AgentApiError, BackendUnreachableError, pingBackend, processFiles, BASE_URL } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -11,6 +12,7 @@ export type ChatMessage = {
   id: string
   role: 'user' | 'assistant' | 'error'
   content: string
+  downloadUrl?: string
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -77,11 +79,11 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
     try {
       // ── Real API call ──────────────────────────────────────────────────────
       // Sends prompt + all real File objects as multipart/form-data.
-      const reply = await processFiles(text, rawFiles)
+      const { reply, downloadUrl } = await processFiles(text, rawFiles)
 
       setMessages((prev) => [
         ...prev,
-        { id: crypto.randomUUID(), role: 'assistant', content: reply },
+        { id: crypto.randomUUID(), role: 'assistant', content: reply, downloadUrl },
       ])
       // Mark backend as online after a successful call.
       setBackendOnline(true)
@@ -271,7 +273,18 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             : 'border border-border bg-card text-card-foreground'
         }`}
       >
-        {message.content}
+        <div className="whitespace-pre-wrap">{message.content}</div>
+        {message.downloadUrl && (
+          <div className="mt-3">
+            <a 
+              href={`${BASE_URL}${message.downloadUrl}`} 
+              download 
+              className={cn(buttonVariants({ size: 'sm', variant: 'secondary' }), "gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex")}
+            >
+              <Download className="size-4" /> Download File
+            </a>
+          </div>
+        )}
       </div>
     </div>
   )

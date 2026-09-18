@@ -1,0 +1,46 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# ── Node / Next.js ────────────────────────────────────────────────────────────
+node_modules/
+.next/
+.pnpm-store/
+
+# ── Environment files (never bake secrets into an image) ─────────────────────
+.env
+.env.local
+.env.*.local
+.env.production.example
+
+# ── Frontend source (not needed in the backend image) ────────────────────────
+app/
+components/
+lib/
+public/
+
+# ── Documentation & spec files ────────────────────────────────────────────────
+*.md
+.kiro/
+
+# ── Version control & OS artefacts ───────────────────────────────────────────
+.git/
+.gitignore
+.DS_Store
+*.log
+
+# ── Config files not needed at runtime ───────────────────────────────────────
+tsconfig.json
+components.json
+postcss.config.mjs
+next.config.mjs
+pnpm-lock.yaml
+pnpm-workspace.yaml
+package.json
