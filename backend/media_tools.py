@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+from contextvars import ContextVar
 from pathlib import Path
 
 import ffmpeg
@@ -16,6 +17,57 @@ import fitz
 from strands import tool
 
 logger = logging.getLogger(__name__)
+
+# ── Artifact Tracker ──────────────────────────────────────────────────────────
+
+current_output_files: ContextVar[list[str]] = ContextVar("current_output_files", default=[])
+_fallback_tracked_files: list[str] = []
+
+def reset_artifacts() -> list[str]:
+    """Resets the artifact list for a new request."""
+    global _fallback_tracked_files
+    _fallback_tracked_files = []
+    new_list: list[str] = []
+    current_output_files.set(new_list)
+    return new_list
+
+def record_artifact(path: str) -> None:
+    """Records an artifact file path created by a tool."""
+    global _fallback_tracked_files
+    try:
+        resolved = str(Path(path).resolve())
+    except Exception:
+        resolved = str(path)
+
+    # Track in ContextVar
+    try:
+        files = current_output_files.get()
+    except LookupError:
+        files = []
+        current_output_files.set(files)
+
+    if resolved not in files:
+        files.append(resolved)
+
+    # Track in module-level list as thread/executor safeguard
+    if resolved not in _fallback_tracked_files:
+        _fallback_tracked_files.append(resolved)
+
+    logger.info("Artifact recorded: %s (tracked count: %d)", resolved, len(files))
+
+def get_artifacts() -> list[str]:
+    """Returns a list of all artifacts recorded during the current request."""
+    combined: list[str] = []
+    try:
+        for f in current_output_files.get():
+            if f not in combined:
+                combined.append(f)
+    except LookupError:
+        pass
+    for f in _fallback_tracked_files:
+        if f not in combined:
+            combined.append(f)
+    return combined
 
 # --- PDF OPERATIONS ---
 
@@ -38,6 +90,7 @@ def merge_pdfs(input_paths: list[str], output_path: str) -> str:
             with fitz.open(path) as next_doc:
                 doc.insert_pdf(next_doc)
         doc.save(str(out))
+    record_artifact(str(out))
     return str(out)
 
 
@@ -66,6 +119,7 @@ def split_pdf_to_zip(input_path: str, output_dir: str) -> str:
 
     zip_path = out_dir / "pages.zip"
     shutil.make_archive(base_name=str(out_dir / "pages"), format="zip", root_dir=str(pages_dir))
+    record_artifact(str(zip_path))
     return str(zip_path)
 
 
@@ -103,6 +157,7 @@ def compress_pdf(input_path: str, output_path: str) -> str:
 
     with fitz.open(input_path) as doc:
         doc.save(str(out), garbage=4, deflate=True)
+    record_artifact(str(out))
     return str(out)
 
 
@@ -123,6 +178,7 @@ def convert_media(input_path: str, output_path: str) -> str:
     logger.info("Tool convert_media called: %s -> %s", input_path, output_path)
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     ffmpeg.input(input_path).output(output_path).run(overwrite_output=True, quiet=True)
+    record_artifact(output_path)
     return output_path
 
 
@@ -141,6 +197,7 @@ def extract_audio(input_video: str, output_audio: str) -> str:
     logger.info("Tool extract_audio called: %s -> %s", input_video, output_audio)
     Path(output_audio).parent.mkdir(parents=True, exist_ok=True)
     ffmpeg.input(input_video).audio.output(output_audio).run(overwrite_output=True, quiet=True)
+    record_artifact(output_audio)
     return output_audio
 
 
@@ -168,6 +225,7 @@ def trim_media(input_path: str, output_path: str, start_time: str, end_time: str
         output_path = str(out)
 
     ffmpeg.input(input_path, ss=start_time, to=end_time).output(output_path).run(overwrite_output=True, quiet=True)
+    record_artifact(output_path)
     return output_path
 
 
@@ -187,6 +245,7 @@ def compress_video(input_path: str, output_path: str, crf: int = 28) -> str:
     logger.info("Tool compress_video called: %s (crf=%d) -> %s", input_path, crf, output_path)
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     ffmpeg.input(input_path).output(output_path, vcodec='libx264', crf=crf).run(overwrite_output=True, quiet=True)
+    record_artifact(output_path)
     return output_path
 
 

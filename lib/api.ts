@@ -148,5 +148,24 @@ export async function processFiles(
     : data.download_url
       ? [data.download_url]
       : []
-  return { reply: data.response, files: fileList, downloadUrl: data.download_url }
+  return { reply: cleanReplyText(data.response), files: fileList, downloadUrl: data.download_url }
+}
+
+function cleanReplyText(text: string): string {
+  if (!text) return ''
+  const trimmed = text.trim()
+  if (trimmed.startsWith('{') && trimmed.includes('"message"')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+      if (parsed && typeof parsed.message === 'string') {
+        return parsed.message
+      }
+    } catch {
+      const match = trimmed.match(/"message"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/)
+      if (match && match[1]) {
+        return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
+      }
+    }
+  }
+  return text
 }
