@@ -39,6 +39,7 @@ import logging
 import subprocess
 import sys
 import textwrap
+from pathlib import Path
 
 from strands import Agent, tool
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
@@ -77,19 +78,19 @@ STEP 1 — READ the enriched prompt carefully.
 STEP 2 — SYNTHESIZE a complete, self-contained Python script.
   Rules for the script:
   ① Use ONLY these approved libraries:
-      ffmpeg-python, fitz (PyMuPDF), Pillow (PIL), pydub,
+      ffmpeg-python, pymupdf, Pillow (PIL), pydub,
       pathlib, shutil, re, math, json, csv, datetime, itertools.
   ② Hard-code the exact absolute input path(s) from STEP 1 into the script.
   ③ Write the output file to the SAME directory as the input file.
   ④ NEVER use: os.system, subprocess, __import__, eval, exec, socket, open().
      Use pathlib.Path.read_bytes() / write_bytes() / read_text() instead of open().
-  ⑤ For PyMuPDF: use fitz.Document(path) — NOT fitz.open() — to avoid the
-     open() guardrail pattern. When merging PDFs using PyMuPDF (fitz), NEVER use `insert_page()`. Always use `doc1.insert_pdf(doc2)` to merge documents.
+  ⑤ For PyMuPDF: use pymupdf.Document(path) — NOT pymupdf.open() — to avoid the
+     open() guardrail pattern. When merging PDFs using PyMuPDF (pymupdf), NEVER use `insert_page()`. Always use `doc1.insert_pdf(doc2)` to merge documents.
   ⑥ The LAST line of the script must be a print() that outputs either:
        - The absolute path of the output file, or
        - A plain-English summary if no file is produced.
   ⑦ Call .overwrite_output() on all ffmpeg chains.
-  ⑧ Call .close() on all fitz.Document objects.
+  ⑧ Call .close() on all pymupdf.Document objects.
 
 STEP 3 — CALL check_guardrail(script) with the full script string.
   • If it returns "NONE" → proceed to STEP 4.
@@ -138,24 +139,15 @@ Key parameters:
 WORKED EXAMPLE 2 — PDF watermark
 ════════════════════════════════════════════════════════
 User: "add a diagonal CONFIDENTIAL watermark to this PDF"
-File: /tmp/omni_agent/def456/report.pdf
+File: /tmp/omni_agent/abc123/contract.pdf
 
 Script you would synthesize:
 ─────────────────────────────
-import fitz
-import math
-src = '/tmp/omni_agent/def456/report.pdf'
-out = '/tmp/omni_agent/def456/report_watermarked.pdf'
-doc = fitz.Document(src)
+import pymupdf
+out = '/tmp/omni_agent/abc123/contract_watermarked.pdf'
+doc = pymupdf.Document('/tmp/omni_agent/abc123/contract.pdf')
 for page in doc:
-    rect = page.rect
-    wm = fitz.TextWriter(rect)
-    wm.append(
-        (rect.width * 0.1, rect.height * 0.6),
-        'CONFIDENTIAL',
-        fontsize=48,
-    )
-    wm.write_text(page, color=(0.8, 0, 0), rotate=45, morph=(rect.center, fitz.Matrix(1,0,0,1,0,0)))
+    page.insert_text((100, 100), "CONFIDENTIAL", fontsize=50, color=(1, 0, 0), rotate=45)
 doc.save(out)
 doc.close()
 print(out)
@@ -219,16 +211,34 @@ def check_guardrail(code_snippet: str) -> str:
 
 # ── Agent ─────────────────────────────────────────────────────────────────────
 
-try:
-    from strands_tools.code_interpreter import AgentCoreCodeInterpreter
-    code_interpreter_tool = AgentCoreCodeInterpreter(region="us-east-1")
-    interpreter_tool = code_interpreter_tool.code_interpreter
-except ImportError:
-    logger.warning("strands_tools not found, using a dummy code_interpreter tool for tests.")
-    @tool
-    def code_interpreter(code: str) -> str:
-        return "Dummy code interpreter execution."
-    interpreter_tool = code_interpreter
+@tool
+def code_interpreter(code: str) -> str:
+    """
+    Executes a Python script locally in a secure subprocess.
+    """
+    logger.info("Executing script via local code_interpreter tool:\n%s", textwrap.indent(code, "  "))
+    try:
+        import re
+        match = re.search(r'/tmp/omni_agent/([a-fA-F0-9\-]{36})', code)
+        cwd_path = Path(UPLOAD_TMP_DIR) / match.group(1) if match else Path(UPLOAD_TMP_DIR)
+        
+        proc = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            text=True,
+            timeout=CODE_EXEC_TIMEOUT,
+            cwd=str(cwd_path),
+        )
+        if proc.returncode == 0:
+            return proc.stdout or "Execution successful (no output)."
+        else:
+            return f"Execution failed (exit code {proc.returncode}):\n{proc.stderr}"
+    except subprocess.TimeoutExpired:
+        return f"Execution timed out after {CODE_EXEC_TIMEOUT} seconds."
+    except Exception as e:
+        return f"Execution failed with internal error: {e}"
+
+interpreter_tool = code_interpreter
 
 agent = Agent(
     model=get_model(),

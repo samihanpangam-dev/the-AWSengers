@@ -6,7 +6,7 @@ fastapi
 uvicorn[standard]
 python-multipart
 strands-agents
-strands-tools
+
 bedrock-agentcore
 pymupdf
 ffmpeg-python
