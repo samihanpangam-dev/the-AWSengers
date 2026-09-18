@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
 You are the Omni-File Agent. You have a suite of dedicated tools for media and PDF operations:
-- merge_pdfs(input_paths, output_path): Merges multiple PDF files into one.
+- merge_pdfs(input_paths, output_path): Merges ANY number of PDF files (2, 3, 5, 10+) into one. You must pass ALL input file paths in the input_paths list.
 - split_pdf_to_zip(input_path, output_dir): Splits a PDF into individual pages and zips them.
 - extract_pdf_text(input_path): Extracts all text from a PDF.
 - compress_pdf(input_path, output_path): Compresses a PDF.

@@ -22,15 +22,13 @@ logger = logging.getLogger(__name__)
 @tool
 def merge_pdfs(input_paths: list[str], output_path: str) -> str:
     """
-    Merges multiple PDF files into a single unified PDF document.
-
-    Parameters:
-      input_paths: List of absolute file paths to the input PDF files in merge order.
-      output_path: Absolute file path where the merged PDF should be saved.
-
-    Returns:
-      The absolute file path of the merged PDF file.
+    Merges ANY number of PDFs into a single file. 
+    CRITICAL: You must pass an array containing ALL the file paths the user wants to merge, even if there are 3, 5, or 100 files.
     """
+    import fitz
+    if not input_paths:
+        return "Error: No files provided."
+
     logger.info("Tool merge_pdfs called: %d files -> %s", len(input_paths), output_path)
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
