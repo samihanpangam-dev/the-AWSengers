@@ -55,9 +55,10 @@ def mock_apply_guardrail(code_snippet: str) -> dict[str, str]:
     """
     Scan *code_snippet* for policy violations.
     """
-    # ── 1. Explicit Whitelists (PyMuPDF and ffmpeg) ───────────────────────────
-    # We allow these specific patterns unconditionally if they are the only file handling.
-    whitelisted_patterns = ["fitz.open", "ffmpeg.input", "ffmpeg.output", "fitz.Document"]
+    # ── 1. Explicit Whitelists (PyMuPDF, standard libs, and ffmpeg) ────────────────
+    # These are naturally allowed since our regex only blocks standalone open(), 
+    # but we document them here to confirm standard libs (json, base64) and pymupdf are allowed.
+    whitelisted_patterns = ["fitz.open", "pymupdf.open", "pymupdf.Document", "ffmpeg.input", "json", "base64", "hashlib"]
     # We do not return "NONE" immediately because we still need to check for dangerous commands.
 
     # ── 2. Plain substring patterns ───────────────────────────────────────────
