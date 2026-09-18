@@ -188,7 +188,7 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
             file={rawFiles.find(f => f.type.startsWith('audio/') || f.type.startsWith('video/'))!}
             onClose={() => setShowTrimmer(false)}
             onSubmit={(start, end) => {
-              const finalPrompt = `${trimPendingText}. Trim this file from ${start} to ${end}.`
+              const finalPrompt = `Trim this media file from ${start} to ${end}. Save the output to a new file.`
               setShowTrimmer(false)
               handleSubmit(undefined, finalPrompt)
             }}

@@ -176,6 +176,9 @@ async def process(
                 request_id, safe_name, dest.stat().st_size,
             )
 
+        input_paths = {Path(dest).resolve() for _, dest in saved}
+        initial_files = set(tmp_dir.iterdir())
+
         # ── 2. Enrich prompt with absolute file paths ─────────────────────────
         enriched = _build_enriched_prompt(prompt, saved)
 
@@ -233,23 +236,55 @@ async def process(
             request_id, len(response_text),
         )
         
-        # Extract download URL if agent produced an output file
+        # ── 5. Detect and extract generated output file ───────────────────────
         import re
         download_url = None
         
         # Clean up any leaked markdown code blocks or JSON traces
         response_text = re.sub(r'```[\s\S]*?```', '', response_text)
         
+        # Identify any newly created files on disk (excluding scripts and input files)
+        new_files = [
+            f for f in tmp_dir.iterdir()
+            if f.is_file()
+            and f not in initial_files
+            and f.resolve() not in input_paths
+            and f.suffix != ".py"
+            and not f.name.endswith(".py")
+        ]
+        new_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+
         # Match [OUTPUT: /tmp/omni_agent/<uuid>/filename]
         match = re.search(r'\[OUTPUT:\s*([^\]]+)\]', response_text)
+        matched_file = None
         if match:
-            full_path = match.group(1).strip()
-            # Verify the path is within tmp_dir
-            if full_path.startswith(str(tmp_dir)):
-                filename = Path(full_path).name
-                download_url = f"/download/{request_id}/{filename}"
-                # Clean up the raw path from the response text
-                response_text = response_text.replace(match.group(0), "")
+            raw_path = match.group(1).strip()
+            # Clean up the raw tag from response text
+            response_text = response_text.replace(match.group(0), "")
+            try:
+                candidate = Path(raw_path).resolve()
+                if candidate.is_file() and str(candidate).startswith(str(tmp_dir.resolve())):
+                    # Reject if the agent accidentally pointed back to an input file
+                    if candidate not in input_paths:
+                        matched_file = candidate
+                    else:
+                        logger.warning(
+                            "request=%s  agent output tag pointed to original input file %s",
+                            request_id, candidate.name,
+                        )
+            except Exception as e:
+                logger.warning("request=%s  failed resolving tagged path %r: %s", request_id, raw_path, e)
+
+        if matched_file:
+            download_url = f"/download/{request_id}/{matched_file.name}"
+            logger.info("request=%s  selected tagged output file: %s", request_id, matched_file.name)
+        elif new_files:
+            # Fallback: agent generated a new file on disk but didn't tag it properly
+            output_file = new_files[0]
+            download_url = f"/download/{request_id}/{output_file.name}"
+            logger.info("request=%s  detected new output file on disk: %s", request_id, output_file.name)
+        else:
+            logger.warning("request=%s  no new output file was generated in %s", request_id, tmp_dir)
                 
         # Fallback: remove any residual /tmp/omni_agent/... paths the agent might have leaked
         response_text = re.sub(rf"{re.escape(str(tmp_dir))}/[^\s\"'`]+", "", response_text)
