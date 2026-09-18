@@ -1,39 +1,32 @@
 """
 backend/main.py — FastAPI entrypoint for the Omni-File AI Agent v2.
 
-Endpoints
----------
-GET  /health   — liveness probe; exposes active ENV and model ID so operators
-                 can confirm which mode is running after a deploy.
-POST /process  — multipart/form-data: prompt (str) + files[] (UploadFile[])
-                 → JSON { "response": str }
-
-Run locally
------------
-    source .venv/bin/activate
-    uvicorn backend.main:app --reload --port 8000
-
-Docker
-------
-    docker run -e ENV=production -p 8000:8000 omni-agent
+Architecture:
+- AWS Cedar Policy Engine authorization gating on all requests.
+- Strands Agent initialized with local Qwen 2.5 via Ollama.
+- Bound to guaranteed prebuilt media tools (PyMuPDF & ffmpeg-python).
+- Concurrency protection via asyncio.Lock().
+- Multipart/form-data upload and file download serving.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import shutil
 import uuid
 from pathlib import Path
+from typing import Any
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from strands import Agent
 
-from .config import ACTIVE_MODEL, ENV, UPLOAD_TMP_DIR, apply_guardrail
-from .guardrail import GuardrailException
-from .agent import agent
-
-agent_lock = asyncio.Lock()
+from .config import ACTIVE_MODEL, ENV, UPLOAD_TMP_DIR, get_model
+from .media_tools import ALL_MEDIA_TOOLS
+from .security import cedar_engine
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -43,25 +36,45 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ── Strands Agent Initialization (Qwen 2.5 via Ollama) ────────────────────────
+
+AGENT_SYSTEM_PROMPT = """
+You are the Omni-File Agent. You have a suite of dedicated tools for media and PDF operations. When a user requests a file operation, you MUST use the provided tools. You are STRICTLY FORBIDDEN from generating or executing raw Python scripts for these standard tasks. Execute the tool silently, and return only the final output file path and a brief success message.
+
+Available tools:
+- merge_pdfs(input_paths, output_path): Merges multiple PDF files into one.
+- split_pdf_to_zip(input_path, output_dir): Splits a PDF into individual pages and zips them.
+- extract_pdf_text(input_path): Extracts all text from a PDF.
+- compress_pdf(input_path, output_path): Compresses a PDF file.
+- convert_media(input_path, output_path): Converts audio or video to a new format based on output extension.
+- extract_audio(input_video, output_audio): Strips video track and saves only audio.
+- trim_media(input_path, output_path, start_time, end_time): Trims media using HH:MM:SS or SS timestamps.
+- compress_video(input_path, output_path, crf): Compresses a video to reduce file size.
+
+Always wrap the final generated output file path in your reply formatted exactly as:
+[OUTPUT: /absolute/path/to/file]
+""".strip()
+
+agent = Agent(
+    model=get_model(),
+    system_prompt=AGENT_SYSTEM_PROMPT,
+    tools=ALL_MEDIA_TOOLS,
+)
+
+agent_lock = asyncio.Lock()
+
 # ── App ───────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title="Omni-File AI Agent",
     description=(
-        "A dynamic file-transformation agent powered by Strands. "
-        "Synthesizes and executes custom Python scripts for any file operation."
+        "Enterprise file-transformation agent powered by Strands, "
+        "AWS Cedar policy engine, and prebuilt PyMuPDF & FFmpeg tools."
     ),
-    version="2.0.0",
+    version="2.1.0",
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-# allow_origins=["*"] + allow_credentials=False so that:
-#   • The Vercel frontend (arbitrary *.vercel.app subdomain) is never blocked.
-#   • Teammates' browsers behind any origin work without configuration.
-#   • The Cloudflare tunnel URL doesn't need to be hardcoded here.
-#
-# To lock down for production: replace ["*"] with ["https://your-app.vercel.app"]
-# and set allow_credentials=True.
 
 app.add_middleware(
     CORSMiddleware,
@@ -76,23 +89,22 @@ logger.info("CORS: allow_origins=* — tunnel/Vercel mode")
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _build_enriched_prompt(prompt: str, saved: list[tuple[str, str]]) -> str:
-    """
-    Inject absolute file paths into the user prompt so the agent's synthesized
-    scripts can hard-code them without guessing.
-
-    The separator line "Files saved to disk:" is the exact string the system
-    prompt tells the LLM to look for in STEP 1 of its workflow.
-    """
+def _build_enriched_prompt(prompt: str, saved: list[tuple[str, str]], tmp_dir: Path) -> str:
+    """Injects file paths and output directory guidance for tool invocation."""
     if not saved:
         return prompt
 
     file_lines = "\n".join(f"  • {name} → {path}" for name, path in saved)
     return (
         f"{prompt}\n\n"
-        f"Files saved to disk:\n"
+        f"Working Directory: {tmp_dir}\n"
+        f"Files available on disk:\n"
         f"{file_lines}\n\n"
-        f"Use the exact absolute paths above in your synthesized script."
+        f"Instructions:\n"
+        f"1. Call the appropriate prebuilt tool to perform the request.\n"
+        f"2. Ensure output files are saved into the working directory: {tmp_dir}\n"
+        f"3. When trimming media, ensure the output path is distinct from the input path.\n"
+        f"4. Respond with a brief friendly message and the output path in [OUTPUT: <path>]."
     )
 
 
@@ -100,21 +112,15 @@ def _build_enriched_prompt(prompt: str, saved: list[tuple[str, str]]) -> str:
 
 @app.get("/health", tags=["ops"])
 async def health() -> dict[str, str]:
-    """
-    Liveness probe — returns immediately without touching the agent.
-
-    The response includes the active ENV and model so operators can confirm
-    the correct mode is running after a deploy or container restart.
-    """
+    """Liveness probe confirming service and model status."""
     return {
         "status": "ok",
-        "env":    ENV,
-        "model":  ACTIVE_MODEL,
+        "env": ENV,
+        "model": ACTIVE_MODEL,
+        "security": "AWS Cedar Policy Engine",
+        "tools": "Hardcoded Media & PDF Tools",
     }
 
-
-from typing import Any
-from fastapi import Request
 
 @app.post("/process", tags=["agent"])
 async def process(
@@ -125,28 +131,15 @@ async def process(
     ),
     files: list[UploadFile] = File(
         default=[],
-        description=(
-            "One or more files to transform. "
-            "Optional — the agent handles text-only queries too."
-        ),
+        description="One or more files to transform.",
     ),
 ) -> dict[str, Any]:
     """
-    Main agent endpoint.
-
-    Accepts multipart/form-data with:
-      prompt  — the user's natural-language request.
-      files   — zero or more uploaded files (PDF, MP4, MP3, image, …).
-
-    Returns
-    -------
-    {"response": str, "download_url": str | None}
-        The agent's natural-language reply, including output file path(s).
-
-    Error responses
-    ---------------
-    400  GuardrailException  — synthesized code blocked by safety guardrail.
-    500  Unexpected error    — agent or subprocess raised an unhandled exception.
+    Main agent endpoint:
+    1. Persists uploaded files to isolated temp directory.
+    2. Enforces AWS Cedar authorization policies (guardrail.cedar).
+    3. Invokes Strands Agent under asyncio.Lock concurrency guard.
+    4. Detects output files and returns clean assistant message and download URL.
     """
     request_id = str(uuid.uuid4())
     tmp_dir = Path(UPLOAD_TMP_DIR) / request_id
@@ -160,8 +153,7 @@ async def process(
     saved: list[tuple[str, str]] = []
 
     try:
-        # ── 1. Persist uploads to an isolated temp directory ──────────────────
-        import asyncio
+        # ── 1. Persist uploads to temp directory ──────────────────────────────
         def _save_upload(upload_file, dest_path):
             with open(dest_path, "wb") as f:
                 shutil.copyfileobj(upload_file.file, f)
@@ -179,50 +171,44 @@ async def process(
         input_paths = {Path(dest).resolve() for _, dest in saved}
         initial_files = set(tmp_dir.iterdir())
 
-        # ── 2. Enrich prompt with absolute file paths ─────────────────────────
-        enriched = _build_enriched_prompt(prompt, saved)
+        # ── 2. AWS Cedar Policy Authorization Gate ────────────────────────────
+        filenames = [name for name, _ in saved]
+        cedar_decision = cedar_engine.classify_and_evaluate(prompt, filenames)
+        logger.info(
+            "request=%s  Cedar policy evaluation: allowed=%s action=%s diagnostics=%s",
+            request_id, cedar_decision.allowed, cedar_decision.action, cedar_decision.diagnostics,
+        )
 
-        # ── 3. Pre-flight guardrail scan on the raw prompt ────────────────────
-        # Catches secrets / injection strings in the user's message itself,
-        # before the agent ever runs. The agent's check_guardrail @tool handles
-        # synthesized code; this gate handles the prompt layer.
-        preflight = apply_guardrail(prompt)
-        if preflight["action"] == "GUARDRAIL_INTERVENED":
-            pattern = preflight.get("detected_pattern", "policy violation")
-            logger.warning(
-                "request=%s  pre-flight guardrail blocked — pattern=%r",
-                request_id, pattern,
-            )
-            raise GuardrailException(
-                reason=f"Prompt blocked by safety guardrail: {pattern}",
-                detected_pattern=pattern,
+        if not cedar_decision.allowed:
+            logger.warning("request=%s  Cedar authorization BLOCKED: %s", request_id, cedar_decision.diagnostics)
+            raise HTTPException(
+                status_code=403,
+                detail=f"Forbidden by AWS Cedar policy: {cedar_decision.diagnostics}",
             )
 
-        # ── 4. Run the Strands Agent ──────────────────────────────────────────
-        logger.info("request=%s  invoking agent…", request_id)
-        
+        # ── 3. Enrich prompt with file paths ──────────────────────────────────
+        enriched = _build_enriched_prompt(prompt, saved, tmp_dir)
+
+        # ── 4. Run the Strands Agent with Lock & Disconnect Watcher ───────────
+        logger.info("request=%s  invoking agent with prebuilt media tools…", request_id)
+
         async def _run_safely():
             async with agent_lock:
                 return await asyncio.to_thread(agent, enriched)
-                
+
         agent_task = asyncio.create_task(_run_safely())
-        
+
         async def _watch_disconnect():
             while True:
                 if await request.is_disconnected():
                     logger.warning("request=%s  client disconnected! Aborting...", request_id)
-                    # 1. Kill any active code interpreter subprocesses (ffmpeg)
-                    from .agent import kill_all_processes
-                    kill_all_processes()
-                    # 2. Cancel the agent's internal LLM loop
                     agent.cancel()
-                    # 3. Cancel the wrapper task so the lock is released
                     agent_task.cancel()
                     break
                 await asyncio.sleep(1)
-                
+
         watcher_task = asyncio.create_task(_watch_disconnect())
-        
+
         try:
             result = await agent_task
         except asyncio.CancelledError:
@@ -231,19 +217,15 @@ async def process(
             watcher_task.cancel()
 
         response_text = str(result)
-        logger.info(
-            "request=%s  agent replied (%d chars)",
-            request_id, len(response_text),
-        )
-        
+        logger.info("request=%s  agent replied (%d chars)", request_id, len(response_text))
+
         # ── 5. Detect and extract generated output file ───────────────────────
-        import re
         download_url = None
-        
+
         # Clean up any leaked markdown code blocks or JSON traces
         response_text = re.sub(r'```[\s\S]*?```', '', response_text)
-        
-        # Identify any newly created files on disk (excluding scripts and input files)
+
+        # Identify newly created files on disk (excluding original input files)
         new_files = [
             f for f in tmp_dir.iterdir()
             if f.is_file()
@@ -259,12 +241,10 @@ async def process(
         matched_file = None
         if match:
             raw_path = match.group(1).strip()
-            # Clean up the raw tag from response text
             response_text = response_text.replace(match.group(0), "")
             try:
                 candidate = Path(raw_path).resolve()
                 if candidate.is_file() and str(candidate).startswith(str(tmp_dir.resolve())):
-                    # Reject if the agent accidentally pointed back to an input file
                     if candidate not in input_paths:
                         matched_file = candidate
                     else:
@@ -279,48 +259,31 @@ async def process(
             download_url = f"/download/{request_id}/{matched_file.name}"
             logger.info("request=%s  selected tagged output file: %s", request_id, matched_file.name)
         elif new_files:
-            # Fallback: agent generated a new file on disk but didn't tag it properly
             output_file = new_files[0]
             download_url = f"/download/{request_id}/{output_file.name}"
             logger.info("request=%s  detected new output file on disk: %s", request_id, output_file.name)
         else:
-            logger.warning("request=%s  no new output file was generated in %s", request_id, tmp_dir)
-                
-        # Fallback: remove any residual /tmp/omni_agent/... paths the agent might have leaked
+            logger.info("request=%s  no output file generated (text query or informational reply)", request_id)
+
+        # Fallback: remove residual /tmp/omni_agent/... paths leaked in message
         response_text = re.sub(rf"{re.escape(str(tmp_dir))}/[^\s\"'`]+", "", response_text)
-        
-        # Clean up excessive newlines caused by stripping
         response_text = re.sub(r'\n{3,}', '\n\n', response_text).strip()
-        
+
         return {"response": response_text, "download_url": download_url}
 
-    except GuardrailException as exc:
-        logger.warning(
-            "request=%s  guardrail blocked — pattern=%r",
-            request_id, exc.detected_pattern,
-        )
-        raise HTTPException(
-            status_code=400,
-            detail=f"Guardrail blocked: {exc.reason}",
-        ) from exc
-
-    except Exception as exc:  # noqa: BLE001
+    except HTTPException:
+        raise
+    except Exception as exc:
         logger.exception("request=%s  unexpected agent error", request_id)
         raise HTTPException(
             status_code=500,
             detail=f"Agent error: {exc}",
         ) from exc
 
-    finally:
-        # ── 5. Defer cleanup ───────────────────────────────────────────
-        # We leave the tmp_dir so the user can download the output file.
-        # A cron job or ephemeral container lifecycle will clean it up.
-        pass
 
 @app.get("/download/{request_id}/{filename}", tags=["agent"])
 async def download_file(request_id: str, filename: str):
     """Download a file generated by the agent."""
-    from fastapi.responses import FileResponse
     path = Path(UPLOAD_TMP_DIR) / request_id / filename
     if not path.exists():
         raise HTTPException(status_code=404, detail="File not found")
