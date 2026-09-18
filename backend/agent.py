@@ -92,6 +92,7 @@ CODE INTERPRETER CHEAT SHEET
 ════════════════════════════════════════════════════════
 • PyMuPDF (PDF Merging): NEVER use `insert_page`. Always use `doc1.insert_pdf(doc2)`.
 • PyMuPDF (PDF Splitting/Extracting): NEVER use `doc.copy()` or `page.save()`. You MUST create a new empty document using `new_doc = pymupdf.Document()`, then insert the specific page using `new_doc.insert_pdf(original_doc, from_page=i, to_page=i)`, and then save `new_doc`. Use `pymupdf.Document()` (not `pymupdf.open()`) to avoid safety guardrails.
+• Audio/Video Trimming: When asked to trim or cut audio/video files: Use `ffmpeg-python`. Do not use complex filter graphs if a simple cut is requested. Use the `ss` (start time) and `to` (end time) input kwargs for the fastest processing. Example: `ffmpeg.input(input_path, ss='00:00:15', to='00:01:30').output(output_path).run(overwrite_output=True)`.
 • Developer Utilities (Base64, JSON, Hashes): Do not rely on external tools. Dynamically write and execute standard library Python scripts (e.g., `base64`, `json`, `hashlib`) via the code interpreter to fulfill the request.
 • Script Output: The LAST line of the script must be a `print()` that outputs either the absolute path of the generated output file, or a plain-English summary if no file is produced.
 
