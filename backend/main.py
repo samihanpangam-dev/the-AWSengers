@@ -20,6 +20,7 @@ Docker
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import shutil
 import uuid
@@ -31,6 +32,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import ACTIVE_MODEL, ENV, UPLOAD_TMP_DIR, apply_guardrail
 from .guardrail import GuardrailException
 from .agent import agent
+
+agent_lock = asyncio.Lock()
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -186,9 +189,9 @@ async def process(
             )
 
         # ── 4. Run the Strands Agent ──────────────────────────────────────────
-        import asyncio
         logger.info("request=%s  invoking agent…", request_id)
-        result = await asyncio.to_thread(agent, enriched)
+        async with agent_lock:
+            result = await asyncio.to_thread(agent, enriched)
         response_text = str(result)
         logger.info(
             "request=%s  agent replied (%d chars)",
