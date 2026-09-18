@@ -13,7 +13,6 @@ export type ChatMessage = {
   role: 'user' | 'assistant' | 'error'
   content: string
   downloadUrl?: string
-  files?: string[]
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -149,17 +148,11 @@ function hasTimeIndicators(text: string): boolean {
     try {
       // ── Real API call ──────────────────────────────────────────────────────
       // Sends prompt + all real File objects as multipart/form-data.
-      const { reply, files: resultFiles, downloadUrl } = await processFiles(text, rawFiles, controller.signal)
+      const { reply, downloadUrl } = await processFiles(text, rawFiles, controller.signal)
 
       setMessages((prev) => [
         ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: reply,
-          files: resultFiles && resultFiles.length > 0 ? resultFiles : downloadUrl ? [downloadUrl] : undefined,
-          downloadUrl,
-        },
+        { id: crypto.randomUUID(), role: 'assistant', content: reply, downloadUrl },
       ])
       // Mark backend as online after a successful call.
       setBackendOnline(true)
@@ -426,35 +419,19 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         }`}
       >
         <div className="whitespace-pre-wrap">{message.content}</div>
-        {message.files && message.files.length > 0 ? (
-          <div className="mt-3 flex flex-col items-start gap-2">
-            {message.files && message.files.map((file, index) => <DownloadButton key={index} file={file} />)}
+        {message.downloadUrl && (
+          <div className="mt-3">
+            <a 
+              href={`${BASE_URL}${message.downloadUrl}`} 
+              download 
+              className={cn(buttonVariants({ size: 'sm', variant: 'secondary' }), "gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex")}
+            >
+              <Download className="size-4" /> Download File
+            </a>
           </div>
-        ) : message.downloadUrl ? (
-          <div className="mt-3 flex flex-col items-start gap-2">
-            <DownloadButton file={message.downloadUrl} />
-          </div>
-        ) : null}
+        )}
       </div>
     </div>
-  )
-}
-
-function DownloadButton({ file }: { file: string }) {
-  const filename = decodeURIComponent(file.split('/').pop() || file)
-
-  return (
-    <a
-      href={file.startsWith('http') ? file : `${BASE_URL}${file.startsWith('/') ? '' : '/'}${file}`}
-      download={filename}
-      className={cn(
-        buttonVariants({ size: 'sm', variant: 'secondary' }),
-        "gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex items-center text-xs font-medium max-w-full truncate shadow-sm transition-all"
-      )}
-    >
-      <Download className="size-3.5 shrink-0" />
-      <span className="truncate">Download {filename}</span>
-    </a>
   )
 }
 

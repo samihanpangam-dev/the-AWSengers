@@ -20,7 +20,6 @@ export const BASE_URL = (
 
 export interface ProcessResponse {
   response: string
-  files?: string[]
   download_url?: string
 }
 
@@ -105,7 +104,7 @@ export async function processFiles(
   prompt: string,
   files: File[],
   signal?: AbortSignal,
-): Promise<{ reply: string; files: string[]; downloadUrl?: string }> {
+): Promise<{ reply: string; downloadUrl?: string }> {
   const body = new FormData()
   body.append('prompt', prompt)
   for (const file of files) {
@@ -143,29 +142,5 @@ export async function processFiles(
   }
 
   const data = (await res.json()) as ProcessResponse
-  const fileList = Array.isArray(data.files) && data.files.length > 0
-    ? data.files
-    : data.download_url
-      ? [data.download_url]
-      : []
-  return { reply: cleanReplyText(data.response), files: fileList, downloadUrl: data.download_url }
-}
-
-function cleanReplyText(text: string): string {
-  if (!text) return ''
-  const trimmed = text.trim()
-  if (trimmed.startsWith('{') && trimmed.includes('"message"')) {
-    try {
-      const parsed = JSON.parse(trimmed)
-      if (parsed && typeof parsed.message === 'string') {
-        return parsed.message
-      }
-    } catch {
-      const match = trimmed.match(/"message"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/)
-      if (match && match[1]) {
-        return match[1].replace(/\\"/g, '"').replace(/\\n/g, '\n')
-      }
-    }
-  }
-  return text
+  return { reply: data.response, downloadUrl: data.download_url }
 }

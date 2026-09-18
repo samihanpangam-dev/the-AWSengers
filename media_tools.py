@@ -7,13 +7,9 @@ from backend.media_tools import (
     compress_pdf,
     compress_video,
     convert_media,
-    current_output_files,
     extract_audio,
     extract_pdf_text,
-    get_artifacts,
     merge_pdfs,
-    record_artifact,
-    reset_artifacts,
     split_pdf_to_zip,
     trim_media,
 )
@@ -28,8 +24,4 @@ __all__ = [
     "extract_audio",
     "trim_media",
     "compress_video",
-    "current_output_files",
-    "record_artifact",
-    "get_artifacts",
-    "reset_artifacts",
 ]
