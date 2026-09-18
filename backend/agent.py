@@ -136,11 +136,11 @@ STEP 4 — CALL code_interpreter(script) with the same script string.
     the error to the user with a clear explanation.
 
 STEP 5 — RESPOND to the user. Your final response MUST be brief and user-facing.
-  • Do NOT output your internal reasoning, the python script, or debugging steps.
-  • ONLY state what transformation was applied.
+  • NEVER show the user the Python code you write. NEVER narrate your internal steps or tool executions (e.g., do not say 'Here is the script', or 'Let's run this').
+  • You must execute the Code Interpreter silently in the background.
+  • Your final response to the user must ONLY be a brief, friendly success message (e.g., 'Your video has been trimmed!') and the final output file path.
   • You MUST output the absolute path of the generated file wrapped EXACTLY in this tag:
     [OUTPUT: /tmp/omni_agent/...]
-  • Any important caveats (e.g., lossy compression, page count changed).
 
 ════════════════════════════════════════════════════════
 WORKED EXAMPLE 1 — Audio clip with amplification
@@ -240,34 +240,69 @@ def check_guardrail(code_snippet: str) -> str:
     return "NONE"
 
 
+# ── Process Tracking for Aggressive Cancellation ──────────────────────────────
+import threading
+import sys
+
+active_processes_lock = threading.Lock()
+active_processes = []
+
+def kill_all_processes():
+    """Aggressively terminate any running Code Interpreter subprocesses (e.g. ffmpeg)."""
+    with active_processes_lock:
+        for proc in active_processes:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        active_processes.clear()
+
+
 # ── Agent ─────────────────────────────────────────────────────────────────────
 
 @tool
 def code_interpreter(code: str) -> str:
-    """
-    Executes a Python script locally in a secure subprocess.
-    """
+    """Executes synthesized Python code in a sandboxed directory."""
+    import re
+    import textwrap
     logger.info("Executing script via local code_interpreter tool:\n%s", textwrap.indent(code, "  "))
-    try:
-        import re
-        match = re.search(r'/tmp/omni_agent/([a-fA-F0-9\-]{36})', code)
-        cwd_path = Path(UPLOAD_TMP_DIR) / match.group(1) if match else Path(UPLOAD_TMP_DIR)
-        
-        proc = subprocess.run(
-            [sys.executable, "-c", code],
-            capture_output=True,
+
+    # 1. Extract request_id from the code to find the correct cwd
+    match = re.search(r'/tmp/omni_agent/([a-fA-F0-9\-]{36})', code)
+    cwd_path = Path(UPLOAD_TMP_DIR) / match.group(1) if match else Path(UPLOAD_TMP_DIR)
+
+    # 2. Write the script
+    script_path = cwd_path / "script.py"
+    script_path.write_text(code)
+
+    # 3. Execute
+    with active_processes_lock:
+        proc = subprocess.Popen(
+            [sys.executable, str(script_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=CODE_EXEC_TIMEOUT,
             cwd=str(cwd_path),
         )
-        if proc.returncode == 0:
-            return proc.stdout or "Execution successful (no output)."
-        else:
-            return f"Execution failed (exit code {proc.returncode}):\n{proc.stderr}"
+        active_processes.append(proc)
+        
+    try:
+        stdout, stderr = proc.communicate(timeout=CODE_EXEC_TIMEOUT)
     except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.communicate()
         return f"Execution timed out after {CODE_EXEC_TIMEOUT} seconds."
     except Exception as e:
         return f"Execution failed with internal error: {e}"
+    finally:
+        with active_processes_lock:
+            if proc in active_processes:
+                active_processes.remove(proc)
+
+    if proc.returncode == 0:
+        return stdout or "Execution successful (no output)."
+    else:
+        return f"Execution failed (exit code {proc.returncode}):\n{stderr}"
 
 interpreter_tool = code_interpreter
 

@@ -63,6 +63,8 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
     })
   }, [messages, isProcessing])
 
+  const [abortController, setAbortController] = useState<AbortController | null>(null)
+  
   // ── Submit handler ─────────────────────────────────────────────────────────
   async function handleSubmit(e?: React.FormEvent, overrideText?: string) {
     if (e) e.preventDefault()
@@ -87,11 +89,14 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
     setMessages((prev) => [...prev, userMessage])
     setInput('')
     setIsProcessing(true)
+    
+    const controller = new AbortController()
+    setAbortController(controller)
 
     try {
       // ── Real API call ──────────────────────────────────────────────────────
       // Sends prompt + all real File objects as multipart/form-data.
-      const { reply, downloadUrl } = await processFiles(text, rawFiles)
+      const { reply, downloadUrl } = await processFiles(text, rawFiles, controller.signal)
 
       setMessages((prev) => [
         ...prev,
@@ -101,6 +106,14 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
       setBackendOnline(true)
     } catch (err) {
       // ── Error handling ─────────────────────────────────────────────────────
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: 'error', content: 'Generation cancelled by user.' },
+        ])
+        return
+      }
+
       let errorText: string
 
       if (err instanceof BackendUnreachableError) {
@@ -126,6 +139,7 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
       ])
     } finally {
       setIsProcessing(false)
+      setAbortController(null)
     }
   }
 
@@ -213,15 +227,28 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
               className="max-h-40 min-h-6 w-full resize-none bg-transparent text-sm leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
-          <Button
-            type="submit"
-            size="icon-lg"
-            aria-label="Send message"
-            disabled={!input.trim() || isProcessing}
-            className="rounded-full"
-          >
-            <ArrowUp />
-          </Button>
+          {isProcessing ? (
+            <Button
+              type="button"
+              size="icon-lg"
+              variant="destructive"
+              aria-label="Stop generation"
+              onClick={() => abortController?.abort()}
+              className="rounded-full shrink-0"
+            >
+              <div className="h-4 w-4 bg-current rounded-sm" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              size="icon-lg"
+              aria-label="Send message"
+              disabled={!input.trim()}
+              className="rounded-full shrink-0"
+            >
+              <ArrowUp />
+            </Button>
+          )}
         </form>
       </div>
     </main>

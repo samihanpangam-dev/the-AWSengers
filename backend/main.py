@@ -114,9 +114,11 @@ async def health() -> dict[str, str]:
 
 
 from typing import Any
+from fastapi import Request
 
 @app.post("/process", tags=["agent"])
 async def process(
+    request: Request,
     prompt: str = Form(
         ...,
         description="Natural-language instruction for the agent.",
@@ -200,14 +202,30 @@ async def process(
             async with agent_lock:
                 return await asyncio.to_thread(agent, enriched)
                 
+        agent_task = asyncio.create_task(_run_safely())
+        
+        async def _watch_disconnect():
+            while True:
+                if await request.is_disconnected():
+                    logger.warning("request=%s  client disconnected! Aborting...", request_id)
+                    # 1. Kill any active code interpreter subprocesses (ffmpeg)
+                    from .agent import kill_all_processes
+                    kill_all_processes()
+                    # 2. Cancel the agent's internal LLM loop
+                    agent.cancel()
+                    # 3. Cancel the wrapper task so the lock is released
+                    agent_task.cancel()
+                    break
+                await asyncio.sleep(1)
+                
+        watcher_task = asyncio.create_task(_watch_disconnect())
+        
         try:
-            # We shield the execution so that if the user refreshes the page 
-            # (canceling the request), the agent finishes its current run 
-            # while HOLDING the lock, preventing concurrent 500 crashes.
-            result = await asyncio.shield(_run_safely())
+            result = await agent_task
         except asyncio.CancelledError:
-            logger.warning("request=%s  client disconnected, but agent continues in background", request_id)
             raise
+        finally:
+            watcher_task.cancel()
 
         response_text = str(result)
         logger.info(
@@ -218,6 +236,9 @@ async def process(
         # Extract download URL if agent produced an output file
         import re
         download_url = None
+        
+        # Clean up any leaked markdown code blocks or JSON traces
+        response_text = re.sub(r'```[\s\S]*?```', '', response_text)
         
         # Match [OUTPUT: /tmp/omni_agent/<uuid>/filename]
         match = re.search(r'\[OUTPUT:\s*([^\]]+)\]', response_text)
@@ -233,7 +254,10 @@ async def process(
         # Fallback: remove any residual /tmp/omni_agent/... paths the agent might have leaked
         response_text = re.sub(rf"{re.escape(str(tmp_dir))}/[^\s\"'`]+", "", response_text)
         
-        return {"response": response_text.strip(), "download_url": download_url}
+        # Clean up excessive newlines caused by stripping
+        response_text = re.sub(r'\n{3,}', '\n\n', response_text).strip()
+        
+        return {"response": response_text, "download_url": download_url}
 
     except GuardrailException as exc:
         logger.warning(

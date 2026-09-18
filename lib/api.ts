@@ -103,6 +103,7 @@ export async function pingBackend(): Promise<boolean> {
 export async function processFiles(
   prompt: string,
   files: File[],
+  signal?: AbortSignal,
 ): Promise<{ reply: string; downloadUrl?: string }> {
   const body = new FormData()
   body.append('prompt', prompt)
@@ -116,6 +117,7 @@ export async function processFiles(
     res = await fetch(`${BASE_URL}/process`, {
       method: 'POST',
       body,
+      signal,
       // No explicit timeout here — file processing can take 10-30 s.
       // The processing bubble in the UI communicates progress to the user.
     })
