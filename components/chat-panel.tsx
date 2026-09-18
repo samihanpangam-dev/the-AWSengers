@@ -65,6 +65,16 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
 
   const [abortController, setAbortController] = useState<AbortController | null>(null)
   
+function isMediaFile(file: File): boolean {
+  if (file.type.startsWith('audio/') || file.type.startsWith('video/')) return true
+  const ext = file.name.split('.').pop()?.toLowerCase() || ''
+  return ['mp3', 'mp4', 'wav', 'm4a', 'aac', 'mov', 'mkv', 'flac', 'ogg', 'webm'].includes(ext)
+}
+
+function findMediaFile(files: File[]): File | undefined {
+  return files.find(isMediaFile)
+}
+
   // ── Submit handler ─────────────────────────────────────────────────────────
   async function handleSubmit(e?: React.FormEvent, overrideText?: string) {
     if (e) e.preventDefault()
@@ -72,10 +82,10 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
     if (!text || isProcessing) return
 
     // ── Trimmer Interception ─────────────────────────────────────────────────
-    // If the user says "trim" or "cut" and there's a media file, intercept!
+    // If the user says "trim" or "cut" and there is an attached media file, offer the visual trimmer!
     const isTrimIntent = /\b(trim|cut)\b/i.test(text)
-    const hasMediaFile = rawFiles.some(f => f.type.startsWith('audio/') || f.type.startsWith('video/'))
-    if (isTrimIntent && hasMediaFile && !overrideText) {
+    const mediaFile = findMediaFile(rawFiles)
+    if (isTrimIntent && mediaFile && !overrideText) {
       setTrimPendingText(text)
       setShowTrimmer(true)
       return
@@ -183,17 +193,6 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
 
       {/* ── Message list ───────────────────────────────────────────────────── */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto relative">
-        {showTrimmer && (
-          <MediaTrimmerModal 
-            file={rawFiles.find(f => f.type.startsWith('audio/') || f.type.startsWith('video/'))!}
-            onClose={() => setShowTrimmer(false)}
-            onSubmit={(start, end) => {
-              const finalPrompt = `Trim this media file from ${start} to ${end}. Save the output to a new file.`
-              setShowTrimmer(false)
-              handleSubmit(undefined, finalPrompt)
-            }}
-          />
-        )}
         <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 md:px-6">
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
@@ -251,6 +250,27 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
           )}
         </form>
       </div>
+
+      {/* ── Visual Timeline Trimmer Overlay ────────────────────────────────── */}
+      {showTrimmer && findMediaFile(rawFiles) && (
+        <MediaTrimmerModal 
+          file={findMediaFile(rawFiles)!}
+          pendingPrompt={trimPendingText}
+          onClose={() => setShowTrimmer(false)}
+          onSkip={() => {
+            const textToSend = trimPendingText
+            setShowTrimmer(false)
+            setTrimPendingText('')
+            handleSubmit(undefined, textToSend)
+          }}
+          onSubmit={(start, end) => {
+            const finalPrompt = `${trimPendingText} (trim range: ${start} to ${end})`
+            setShowTrimmer(false)
+            setTrimPendingText('')
+            handleSubmit(undefined, finalPrompt)
+          }}
+        />
+      )}
     </main>
   )
 }
@@ -363,11 +383,15 @@ function ProcessingBubble() {
 
 function MediaTrimmerModal({
   file,
+  pendingPrompt,
   onClose,
+  onSkip,
   onSubmit
 }: {
   file: File;
+  pendingPrompt?: string;
   onClose: () => void;
+  onSkip?: () => void;
   onSubmit: (start: string, end: string) => void;
 }) {
   const [duration, setDuration] = useState(0)
@@ -391,9 +415,15 @@ function MediaTrimmerModal({
   }
 
   return (
-    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-xl flex flex-col gap-4">
-         <h2 className="text-lg font-semibold">Trim {file?.name}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+         <div>
+           <h2 className="text-lg font-semibold">Visual Media Trimmer</h2>
+           <p className="text-xs text-muted-foreground truncate mt-0.5">File: {file?.name}</p>
+           {pendingPrompt && (
+             <p className="text-xs text-primary/80 truncate mt-0.5">Instruction: "{pendingPrompt}"</p>
+           )}
+         </div>
          
          {/* Live Preview */}
          <div className="relative w-full rounded-lg overflow-hidden bg-black/5 flex items-center justify-center" style={{ minHeight: 200 }}>
@@ -475,12 +505,21 @@ function MediaTrimmerModal({
            </div>
          )}
 
-         {/* Actions */}
-         <div className="mt-4 flex justify-end gap-2">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button onClick={() => onSubmit(formatTime(start), formatTime(end))}>Trim File</Button>
-         </div>
-      </div>
-    </div>
+          {/* Actions */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
+             <Button variant="ghost" onClick={onClose}>Cancel</Button>
+             <div className="flex items-center gap-2">
+               {onSkip && (
+                 <Button variant="outline" onClick={onSkip}>
+                   Send Without Trimming
+                 </Button>
+               )}
+               <Button onClick={() => onSubmit(formatTime(start), formatTime(end))}>
+                 Trim & Send
+               </Button>
+             </div>
+          </div>
+       </div>
+     </div>
   )
 }
