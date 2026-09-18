@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { AlertTriangle, ArrowUp, Bot, Terminal, User, Wifi, WifiOff, Download } from 'lucide-react'
+import { AlertTriangle, ArrowUp, Bot, Terminal, User, Wifi, WifiOff, Download, Trash2 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { AgentApiError, BackendUnreachableError, pingBackend, processFiles, BASE_URL } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -13,6 +13,7 @@ export type ChatMessage = {
   role: 'user' | 'assistant' | 'error'
   content: string
   downloadUrl?: string
+  files?: string[]
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -35,9 +36,10 @@ interface ChatPanelProps {
    * Empty array when only placeholder / sample files are loaded.
    */
   rawFiles: File[]
+  onClearAll?: () => void
 }
 
-export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
+export function ChatPanel({ fileCount, rawFiles, onClearAll }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES)
   const [input, setInput] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
@@ -73,6 +75,20 @@ export function ChatPanel({ fileCount, rawFiles }: ChatPanelProps) {
     el.style.height = 'auto'
     el.style.height = `${Math.min(el.scrollHeight, 192)}px`
   }, [input])
+
+  // ── Clear preview and trimmer state when files are cleared ──────────────────
+  useEffect(() => {
+    if (rawFiles.length === 0) {
+      setShowTrimmer(false)
+      setTrimPendingText('')
+    }
+  }, [rawFiles.length])
+
+  function handleClearAll() {
+    setShowTrimmer(false)
+    setTrimPendingText('')
+    onClearAll?.()
+  }
   
 function isMediaFile(file: File): boolean {
   if (file.type.startsWith('audio/') || file.type.startsWith('video/')) return true
@@ -133,11 +149,17 @@ function hasTimeIndicators(text: string): boolean {
     try {
       // ── Real API call ──────────────────────────────────────────────────────
       // Sends prompt + all real File objects as multipart/form-data.
-      const { reply, downloadUrl } = await processFiles(text, rawFiles, controller.signal)
+      const { reply, files: resultFiles, downloadUrl } = await processFiles(text, rawFiles, controller.signal)
 
       setMessages((prev) => [
         ...prev,
-        { id: crypto.randomUUID(), role: 'assistant', content: reply, downloadUrl },
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: reply,
+          files: resultFiles && resultFiles.length > 0 ? resultFiles : downloadUrl ? [downloadUrl] : undefined,
+          downloadUrl,
+        },
       ])
       // Mark backend as online after a successful call.
       setBackendOnline(true)
@@ -230,6 +252,37 @@ function hasTimeIndicators(text: string): boolean {
 
       {/* ── Input bar ──────────────────────────────────────────────────────── */}
       <div className="sticky bottom-0 border-t border-border bg-background/80 backdrop-blur">
+        {rawFiles.length > 0 && (
+          <div className="mx-auto flex max-w-3xl items-center justify-between px-4 pt-3 pb-0 md:px-6">
+            <div className="flex flex-1 items-center gap-2 overflow-hidden text-xs text-muted-foreground">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80 shrink-0">
+                Queue ({rawFiles.length}):
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto max-h-16 py-0.5">
+                {rawFiles.map((file, idx) => (
+                  <span
+                    key={`${file.name}-${idx}`}
+                    className="inline-flex items-center gap-1 rounded-md border border-border/70 bg-card px-2 py-0.5 text-xs font-medium text-foreground"
+                    title={file.name}
+                  >
+                    <span className="max-w-[150px] truncate">{file.name}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+            {rawFiles.length > 1 && onClearAll && (
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="ml-3 inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-destructive"
+                title="Clear all files in queue"
+              >
+                <Trash2 className="size-3.5" />
+                <span>Clear All</span>
+              </button>
+            )}
+          </div>
+        )}
         <form
           onSubmit={handleSubmit}
           className="mx-auto flex max-w-3xl items-end gap-2 px-4 py-4 md:px-6"
@@ -373,19 +426,35 @@ function MessageBubble({ message }: { message: ChatMessage }) {
         }`}
       >
         <div className="whitespace-pre-wrap">{message.content}</div>
-        {message.downloadUrl && (
-          <div className="mt-3">
-            <a 
-              href={`${BASE_URL}${message.downloadUrl}`} 
-              download 
-              className={cn(buttonVariants({ size: 'sm', variant: 'secondary' }), "gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex")}
-            >
-              <Download className="size-4" /> Download File
-            </a>
+        {message.files && message.files.length > 0 ? (
+          <div className="mt-3 flex flex-col items-start gap-2">
+            {message.files && message.files.map((file, index) => <DownloadButton key={index} file={file} />)}
           </div>
-        )}
+        ) : message.downloadUrl ? (
+          <div className="mt-3 flex flex-col items-start gap-2">
+            <DownloadButton file={message.downloadUrl} />
+          </div>
+        ) : null}
       </div>
     </div>
+  )
+}
+
+function DownloadButton({ file }: { file: string }) {
+  const filename = decodeURIComponent(file.split('/').pop() || file)
+
+  return (
+    <a
+      href={file.startsWith('http') ? file : `${BASE_URL}${file.startsWith('/') ? '' : '/'}${file}`}
+      download={filename}
+      className={cn(
+        buttonVariants({ size: 'sm', variant: 'secondary' }),
+        "gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex items-center text-xs font-medium max-w-full truncate shadow-sm transition-all"
+      )}
+    >
+      <Download className="size-3.5 shrink-0" />
+      <span className="truncate">Download {filename}</span>
+    </a>
   )
 }
 

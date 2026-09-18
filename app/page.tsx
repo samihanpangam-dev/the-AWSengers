@@ -13,32 +13,13 @@ import { getFileKind, type UploadedFile } from '@/lib/files'
  */
 interface ManagedFile {
   meta: UploadedFile
-  raw: File | null // null for the sample/placeholder entries
+  raw: File
 }
-
-// ── Sample placeholder data ───────────────────────────────────────────────────
-// Shown on first load so the UI never looks empty.  These have no raw File
-// object — the backend call skips them gracefully (only real Files are sent).
-
-const SAMPLE_MANAGED: ManagedFile[] = [
-  {
-    meta: { id: '1', name: 'quarterly-report.pdf', size: 2_411_000, kind: 'pdf' },
-    raw: null,
-  },
-  {
-    meta: { id: '2', name: 'product-demo.mp4', size: 48_200_000, kind: 'video' },
-    raw: null,
-  },
-  {
-    meta: { id: '3', name: 'interview.mp3', size: 8_700_000, kind: 'audio' },
-    raw: null,
-  },
-]
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Page() {
-  const [managed, setManaged] = useState<ManagedFile[]>(SAMPLE_MANAGED)
+  const [managed, setManaged] = useState<ManagedFile[]>([])
 
   /** The display-only list the sidebar renders. */
   const files: UploadedFile[] = managed.map((m) => m.meta)
@@ -63,14 +44,23 @@ export default function Page() {
     setManaged((prev) => prev.filter((m) => m.meta.id !== id))
   }
 
+  function handleClearAll() {
+    setManaged([])
+  }
+
   return (
     <div className="flex min-h-screen flex-col md:h-screen md:flex-row md:overflow-hidden">
       <FileUploadSidebar
         files={files}
         onAddFiles={handleAddFiles}
         onRemoveFile={handleRemoveFile}
+        onClearAll={handleClearAll}
       />
-      <ChatPanel fileCount={files.length} rawFiles={rawFiles} />
+      <ChatPanel
+        fileCount={files.length}
+        rawFiles={rawFiles}
+        onClearAll={handleClearAll}
+      />
     </div>
   )
 }

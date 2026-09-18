@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { UploadCloud, X, Sparkles } from 'lucide-react'
+import { UploadCloud, X, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   FileTypeIcon,
@@ -14,12 +14,14 @@ type FileUploadSidebarProps = {
   files: UploadedFile[]
   onAddFiles: (files: FileList | File[]) => void
   onRemoveFile: (id: string) => void
+  onClearAll?: () => void
 }
 
 export function FileUploadSidebar({
   files,
   onAddFiles,
   onRemoveFile,
+  onClearAll,
 }: FileUploadSidebarProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -95,12 +97,25 @@ export function FileUploadSidebar({
 
       <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Uploaded Files
-          </h2>
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-            {files.length}
-          </span>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Uploaded Files
+            </h2>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+              {files.length}
+            </span>
+          </div>
+          {files.length > 1 && onClearAll && (
+            <button
+              type="button"
+              onClick={onClearAll}
+              className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-destructive"
+              title="Clear all files"
+            >
+              <Trash2 className="size-3" />
+              <span>Clear All</span>
+            </button>
+          )}
         </div>
 
         {files.length === 0 ? (

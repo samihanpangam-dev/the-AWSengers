@@ -12,6 +12,7 @@ Architecture:
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import shutil
@@ -22,11 +23,19 @@ from typing import Any
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 from strands import Agent
 
 from .config import ACTIVE_MODEL, ENV, UPLOAD_TMP_DIR, get_model
 from .media_tools import ALL_MEDIA_TOOLS
 from .security import cedar_engine
+
+# ── Response Models ───────────────────────────────────────────────────────────
+
+class ProcessResponse(BaseModel):
+    response: str = Field(description="Assistant text response.")
+    files: list[str] = Field(default_factory=list, description="Array of generated file download paths/URLs.")
+    download_url: str | None = Field(default=None, description="Primary download URL for backward compatibility.")
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -39,7 +48,7 @@ logger = logging.getLogger(__name__)
 # ── Strands Agent Initialization (Qwen 2.5 via Ollama) ────────────────────────
 
 AGENT_SYSTEM_PROMPT = """
-You are the Omni-File Agent. You have a suite of dedicated tools for media and PDF operations. When a user requests a file operation, you MUST use the provided tools. You are STRICTLY FORBIDDEN from generating or executing raw Python scripts for these standard tasks. Execute the tool silently, and return only the final output file path and a brief success message.
+You are the Omni-File Agent. You have a suite of dedicated tools for media and PDF operations. When a user requests a file operation, you MUST use the provided tools. You are STRICTLY FORBIDDEN from generating or executing raw Python scripts for these standard tasks. Execute the tool silently.
 
 Available tools:
 - merge_pdfs(input_paths, output_path): Merges ANY number of PDF files (2, 3, 5, 10+) into one. You must pass ALL input file paths in the input_paths list.
@@ -51,8 +60,8 @@ Available tools:
 - trim_media(input_path, output_path, start_time, end_time): Trims media using HH:MM:SS or SS timestamps.
 - compress_video(input_path, output_path, crf): Compresses a video to reduce file size.
 
-Always wrap the final generated output file path in your reply formatted exactly as:
-[OUTPUT: /absolute/path/to/file]
+If a user's prompt results in multiple final output files, you must gather all of the final file paths. Return your final response formatted strictly as a JSON object containing a `message` string and a `files` array containing all output paths.
+For single file outputs, return a JSON object with `message` and `files`, or wrap the output file path in [OUTPUT: /absolute/path/to/file].
 """.strip()
 
 agent = Agent(
@@ -103,8 +112,9 @@ def _build_enriched_prompt(prompt: str, saved: list[tuple[str, str]], tmp_dir: P
         f"Instructions:\n"
         f"1. Call the appropriate prebuilt tool to perform the request.\n"
         f"2. Ensure output files are saved into the working directory: {tmp_dir}\n"
-        f"3. When trimming media, ensure the output path is distinct from the input path.\n"
-        f"4. Respond with a brief friendly message and the output path in [OUTPUT: <path>]."
+        f"3. When trimming media or converting, ensure the output path is distinct from the input path.\n"
+        f"4. If a user's prompt results in multiple final output files, you must gather all of the final file paths. Return your final response formatted strictly as a JSON object containing a `message` string and a `files` array containing all output paths.\n"
+        f"5. For single file outputs, return a JSON object with `message` and `files`, or respond with a brief friendly message and the output path in [OUTPUT: <path>]."
     )
 
 
@@ -122,7 +132,7 @@ async def health() -> dict[str, str]:
     }
 
 
-@app.post("/process", tags=["agent"])
+@app.post("/process", tags=["agent"], response_model=ProcessResponse)
 async def process(
     request: Request,
     prompt: str = Form(
@@ -133,13 +143,13 @@ async def process(
         default=[],
         description="One or more files to transform.",
     ),
-) -> dict[str, Any]:
+) -> ProcessResponse:
     """
     Main agent endpoint:
     1. Persists uploaded files to isolated temp directory.
     2. Enforces AWS Cedar authorization policies (guardrail.cedar).
     3. Invokes Strands Agent under asyncio.Lock concurrency guard.
-    4. Detects output files and returns clean assistant message and download URL.
+    4. Detects output files and returns clean assistant message and download URLs array.
     """
     request_id = str(uuid.uuid4())
     tmp_dir = Path(UPLOAD_TMP_DIR) / request_id
@@ -219,13 +229,45 @@ async def process(
         response_text = str(result)
         logger.info("request=%s  agent replied (%d chars)", request_id, len(response_text))
 
-        # ── 5. Detect and extract generated output file ───────────────────────
-        download_url = None
+        # ── 5. Detect and extract generated output files ──────────────────────
+        parsed_message: str | None = None
+        candidate_paths: list[str] = []
 
-        # Clean up any leaked markdown code blocks or JSON traces
+        # 5a. Attempt to parse JSON response if agent returned structured output
+        json_pattern = (
+            re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', response_text)
+            or re.search(r'(\{[\s\S]*?"message"[\s\S]*?"files"[\s\S]*?\})', response_text)
+            or re.search(r'(\{[\s\S]*?"files"[\s\S]*?"message"[\s\S]*?\})', response_text)
+        )
+        if json_pattern:
+            try:
+                raw_json = json_pattern.group(1)
+                data = json.loads(raw_json)
+                if isinstance(data, dict):
+                    if "message" in data and isinstance(data["message"], str):
+                        parsed_message = data["message"]
+                    if "files" in data:
+                        if isinstance(data["files"], list):
+                            candidate_paths.extend([str(p) for p in data["files"]])
+                        elif isinstance(data["files"], str):
+                            candidate_paths.append(data["files"])
+            except Exception as e:
+                logger.warning("request=%s  failed parsing JSON from agent reply: %s", request_id, e)
+
+        # 5b. Match any [OUTPUT: /path/to/file] tags in text
+        output_matches = re.findall(r'\[OUTPUT:\s*([^\]]+)\]', response_text)
+        for tag_path in output_matches:
+            candidate_paths.append(tag_path.strip())
+
+        # Clean up response text for display
+        response_text = re.sub(r'\[OUTPUT:\s*[^\]]+\]', '', response_text)
         response_text = re.sub(r'```[\s\S]*?```', '', response_text)
+        response_text = re.sub(rf"{re.escape(str(tmp_dir))}/[^\s\"'`]+", "", response_text)
+        response_text = re.sub(r'\n{3,}', '\n\n', response_text).strip()
 
-        # Identify newly created files on disk (excluding original input files)
+        final_response_text = parsed_message if parsed_message else response_text
+
+        # 5c. Identify newly created files on disk (excluding original input files)
         new_files = [
             f for f in tmp_dir.iterdir()
             if f.is_file()
@@ -234,42 +276,45 @@ async def process(
             and f.suffix != ".py"
             and not f.name.endswith(".py")
         ]
+        # Sort newest files first
         new_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
 
-        # Match [OUTPUT: /tmp/omni_agent/<uuid>/filename]
-        match = re.search(r'\[OUTPUT:\s*([^\]]+)\]', response_text)
-        matched_file = None
-        if match:
-            raw_path = match.group(1).strip()
-            response_text = response_text.replace(match.group(0), "")
+        # 5d. Resolve and validate candidate paths against disk
+        resolved_files: list[Path] = []
+        resolved_names: set[str] = set()
+        for raw_p in candidate_paths:
             try:
-                candidate = Path(raw_path).resolve()
-                if candidate.is_file() and str(candidate).startswith(str(tmp_dir.resolve())):
-                    if candidate not in input_paths:
-                        matched_file = candidate
-                    else:
-                        logger.warning(
-                            "request=%s  agent output tag pointed to original input file %s",
-                            request_id, candidate.name,
-                        )
-            except Exception as e:
-                logger.warning("request=%s  failed resolving tagged path %r: %s", request_id, raw_path, e)
+                cand = Path(raw_p).resolve()
+                if not cand.is_file():
+                    cand = (tmp_dir / Path(raw_p).name).resolve()
+                if cand.is_file() and str(cand).startswith(str(tmp_dir.resolve())):
+                    if cand not in input_paths and cand.name not in resolved_names:
+                        resolved_files.append(cand)
+                        resolved_names.add(cand.name)
+            except Exception as ex:
+                logger.warning("request=%s  failed resolving candidate path %r: %s", request_id, raw_p, ex)
 
-        if matched_file:
-            download_url = f"/download/{request_id}/{matched_file.name}"
-            logger.info("request=%s  selected tagged output file: %s", request_id, matched_file.name)
-        elif new_files:
-            output_file = new_files[0]
-            download_url = f"/download/{request_id}/{output_file.name}"
-            logger.info("request=%s  detected new output file on disk: %s", request_id, output_file.name)
-        else:
-            logger.info("request=%s  no output file generated (text query or informational reply)", request_id)
+        # Add any unreferenced new files created on disk during execution
+        for nf in new_files:
+            if nf.name not in resolved_names:
+                resolved_files.append(nf.resolve())
+                resolved_names.add(nf.name)
 
-        # Fallback: remove residual /tmp/omni_agent/... paths leaked in message
-        response_text = re.sub(rf"{re.escape(str(tmp_dir))}/[^\s\"'`]+", "", response_text)
-        response_text = re.sub(r'\n{3,}', '\n\n', response_text).strip()
+        download_urls = [f"/download/{request_id}/{f.name}" for f in resolved_files]
+        primary_download = download_urls[0] if download_urls else None
 
-        return {"response": response_text, "download_url": download_url}
+        logger.info(
+            "request=%s  completed with %d output files: %s",
+            request_id,
+            len(download_urls),
+            [f.name for f in resolved_files],
+        )
+
+        return ProcessResponse(
+            response=final_response_text or "Task completed successfully.",
+            files=download_urls,
+            download_url=primary_download,
+        )
 
     except HTTPException:
         raise

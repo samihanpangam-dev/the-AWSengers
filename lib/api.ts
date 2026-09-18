@@ -20,6 +20,7 @@ export const BASE_URL = (
 
 export interface ProcessResponse {
   response: string
+  files?: string[]
   download_url?: string
 }
 
@@ -104,7 +105,7 @@ export async function processFiles(
   prompt: string,
   files: File[],
   signal?: AbortSignal,
-): Promise<{ reply: string; downloadUrl?: string }> {
+): Promise<{ reply: string; files: string[]; downloadUrl?: string }> {
   const body = new FormData()
   body.append('prompt', prompt)
   for (const file of files) {
@@ -142,5 +143,10 @@ export async function processFiles(
   }
 
   const data = (await res.json()) as ProcessResponse
-  return { reply: data.response, downloadUrl: data.download_url }
+  const fileList = Array.isArray(data.files) && data.files.length > 0
+    ? data.files
+    : data.download_url
+      ? [data.download_url]
+      : []
+  return { reply: data.response, files: fileList, downloadUrl: data.download_url }
 }
