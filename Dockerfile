@@ -52,6 +52,8 @@ COPY backend/ ./backend/
 
 ENV ENV=production
 ENV UPLOAD_TMP_DIR=/tmp/omni_agent
+ENV BEDROCK_MODEL_ID=us.amazon.nova-pro-v1:0
+ENV AWS_REGION=us-east-1
 
 # ── Network ───────────────────────────────────────────────────────────────────
 

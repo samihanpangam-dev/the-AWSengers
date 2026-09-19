@@ -48,14 +48,21 @@ CODE_EXEC_TIMEOUT: int = int(os.environ.get("CODE_EXEC_TIMEOUT_SECONDS", "60"))
 # We use a factory function rather than a module-level instance so the model
 # object is only constructed when agent.py imports it — after logging is set up.
 
-if ENV == "production":
-    ACTIVE_MODEL: str = os.environ["BEDROCK_MODEL_ID"]
+USE_BEDROCK = (
+    ENV == "production"
+    or os.environ.get("USE_BEDROCK", "").lower() in ("true", "1")
+    or bool(os.environ.get("BEDROCK_MODEL_ID"))
+)
+
+if USE_BEDROCK:
+    # Default to Amazon Nova Pro cross-region inference profile
+    ACTIVE_MODEL: str = os.environ.get("BEDROCK_MODEL_ID", "us.amazon.nova-pro-v1:0")
 
     def get_model():
         from strands.models import BedrockModel  # type: ignore[import-untyped]
         return BedrockModel(
             region_name=os.environ.get("AWS_REGION", "us-east-1"),
-            model_config={"model_id": ACTIVE_MODEL},
+            model_id=ACTIVE_MODEL,
         )
 
 else:
@@ -78,10 +85,10 @@ else:
 # ── Guardrail ─────────────────────────────────────────────────────────────────
 # apply_guardrail(code: str) -> {"action": "NONE" | "GUARDRAIL_INTERVENED", ...}
 #
-# Same call signature and return shape in both modes so agent.py never
-# needs to know which implementation is active.
+# Primary authorization is enforced via AWS Cedar (guardrail.cedar + security.py).
+# If BEDROCK_GUARDRAIL_ID is provided, Bedrock Guardrails are called as an additional layer.
 
-if ENV == "production":
+if USE_BEDROCK and os.environ.get("BEDROCK_GUARDRAIL_ID"):
     import boto3  # type: ignore[import-untyped]
 
     _AWS_REGION: str = os.environ.get("AWS_REGION", "us-east-1")
@@ -105,7 +112,8 @@ if ENV == "production":
         return {"action": action}
 
 else:
-    from .guardrail import mock_apply_guardrail as apply_guardrail  # type: ignore[assignment]
+    def apply_guardrail(code: str) -> dict[str, str]:
+        return {"action": "NONE"}
 
 # ── Startup log ───────────────────────────────────────────────────────────────
 

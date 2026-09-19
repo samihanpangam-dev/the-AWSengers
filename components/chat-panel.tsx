@@ -282,7 +282,6 @@ function hasTimeIndicators(text: string): boolean {
         >
           <div className="flex flex-1 items-end rounded-2xl border border-border bg-card px-3 py-2 transition-colors focus-within:border-primary/70 focus-within:ring-3 focus-within:ring-ring/30">
             <textarea
-              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -292,13 +291,12 @@ function hasTimeIndicators(text: string): boolean {
                   !e.nativeEvent.isComposing &&
                   e.keyCode !== 229
                 ) {
-                  e.preventDefault()
                   handleSubmit(e)
                 }
               }}
               rows={1}
               placeholder="Ask about your uploaded files…"
-              className="max-h-48 min-h-[24px] w-full resize-none overflow-y-auto bg-transparent text-sm leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
+              className="max-h-40 min-h-6 w-full resize-none bg-transparent text-sm leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
           {isProcessing ? (
