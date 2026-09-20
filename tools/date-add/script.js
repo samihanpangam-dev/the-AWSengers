@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let d=new Date($('#date').value);d.setDate(d.getDate()+(+$('#days').value));$('#out').textContent=d.toISOString().slice(0,10)}

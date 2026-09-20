@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=$('#input').value.split(/\n+/).filter(Boolean);let type=a.every(x=>!isNaN(x))?'number':a.every(x=>/^\d{4}-\d{2}-\d{2}$/.test(x))?'date':a.every(x=>/^(true|false)$/i.test(x))?'boolean':'text';$('#out').textContent=`Detected type: ${type}`}

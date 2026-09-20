@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let g=+$('#gain').value,c=+$('#cost').value;$('#out').textContent=`ROI: ${((g-c)/c*100).toFixed(2)}%`}

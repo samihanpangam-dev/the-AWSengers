@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let v=$('#v').value,i=$('#i').value,r=$('#r').value;if(v&&i)r=v/i;else if(v&&r)i=v/r;else if(i&&r)v=i*r;$('#out').textContent=`Voltage: ${v||i*r}\nCurrent: ${i||v/r}\nResistance: ${r||v/i}`}

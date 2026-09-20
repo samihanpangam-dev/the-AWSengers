@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let r=$('#input').value.trim().split('\n'),c=r[0]?r[0].split(',').length:0;$('#out').textContent=`Rows: ${Math.max(0,r.length-1)}\nColumns: ${c}\nHeaders: ${r[0]||''}`}

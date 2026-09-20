@@ -1,0 +1,83 @@
+/* Front-page workspace chooser */
+.agent-picker {
+    position: relative;
+    padding-top: 35px;
+    padding-bottom: 45px;
+}
+
+.agent-picker::before {
+    content: "";
+    position: absolute;
+    inset: 0 -8vw;
+    z-index: -1;
+    border-top: 1px solid rgba(53, 214, 255, .12);
+    border-bottom: 1px solid rgba(155, 108, 255, .12);
+    background: linear-gradient(110deg, rgba(53, 214, 255, .045), rgba(155, 108, 255, .035));
+    pointer-events: none;
+}
+
+.agent-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.agent-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    min-height: 150px;
+    padding: 22px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: linear-gradient(145deg, rgba(255,255,255,.07), rgba(255,255,255,.018));
+    transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease;
+}
+
+.agent-card::after {
+    content: "";
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    right: -70px;
+    bottom: -90px;
+    border-radius: 50%;
+    background: var(--purple);
+    filter: blur(35px);
+    opacity: .2;
+    transition: opacity .28s ease;
+}
+
+.agent-card:hover,
+.agent-card.is-selected {
+    transform: translateY(-5px);
+    border-color: rgba(53, 214, 255, .55);
+    box-shadow: 0 18px 45px rgba(0,0,0,.24), 0 0 0 1px rgba(53,214,255,.08);
+}
+
+.agent-card:hover::after { opacity: .42; }
+.agent-card-primary { border-color: rgba(255, 138, 61, .35); }
+
+.agent-card-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    background: linear-gradient(135deg, rgba(255,70,85,.23), rgba(53,214,255,.18));
+    font-size: 23px;
+}
+
+.agent-card-copy { display: flex; flex-direction: column; gap: 7px; position: relative; z-index: 1; }
+.agent-card-copy strong { font-size: 16px; }
+.agent-card-copy small { max-width: 38ch; color: var(--muted); line-height: 1.55; }
+.agent-card-copy em { margin-top: auto; color: var(--cyan); font-size: 12px; font-style: normal; font-weight: 800; }
+.agent-picker-note { margin-top: 14px; color: var(--muted); font-size: 11px; }
+
+@media (max-width: 680px) {
+    .agent-grid { grid-template-columns: 1fr; }
+    .agent-card { min-height: 132px; }
+}

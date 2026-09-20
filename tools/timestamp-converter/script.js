@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let x=+$('#input').value;$('#out').textContent=isNaN(x)?'Invalid timestamp':new Date(x<1e12?x*1000:x).toString()}

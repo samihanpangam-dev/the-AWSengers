@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let age=+$('#age').value,max=220-age;$('#out').textContent=`Estimated max HR: ${max}\nZone 1 (50–60%): ${Math.round(max*.5)}–${Math.round(max*.6)}\nZone 2 (60–70%): ${Math.round(max*.6)}–${Math.round(max*.7)}\nZone 3 (70–80%): ${Math.round(max*.7)}–${Math.round(max*.8)}`}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let b=+$('#bytes').value;$('#out').textContent=`KB: ${(b/1024).toFixed(3)}\nMB: ${(b/1048576).toFixed(3)}\nGB: ${(b/1073741824).toFixed(6)}`}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let t=$('#input').value||'technology';$('#out').textContent=[`Build a dashboard for ${t}`,`Create an automation workflow for ${t}`,`Make a beginner learning platform for ${t}`,`Create a data analyzer for ${t}`,`Build a community tool for ${t}`].join('\n')}

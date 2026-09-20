@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let s=$('#input').value.toLowerCase(),pos=['good','great','excellent','love','happy','awesome','best','success'],neg=['bad','hate','sad','poor','worst','fail','angry','terrible'];let p=pos.filter(x=>s.includes(x)).length,n=neg.filter(x=>s.includes(x)).length;$('#out').textContent=`Positive hits: ${p}\nNegative hits: ${n}\nEstimated sentiment: ${p>n?'Positive':n>p?'Negative':'Neutral'}`}

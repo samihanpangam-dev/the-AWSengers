@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let s=$('#input').value,w=(s.match(/\b\w+\b/g)||[]).length,sen=Math.max(1,(s.match(/[.!?]+/g)||[]).length);$('#out').textContent=`Words: ${w}\nSentences: ${sen}\nWords/sentence: ${(w/sen).toFixed(1)}`}

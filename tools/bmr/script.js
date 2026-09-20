@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let w=+$('#w').value,h=+$('#h').value,a=+$('#a').value,s=$('#s').value;let b=10*w+6.25*h-5*a+(s==='m'?5:-161);$('#out').textContent=`Estimated BMR: ${b.toFixed(0)} kcal/day`}

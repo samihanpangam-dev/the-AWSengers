@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let f=+$('#f').value,t=+$('#t').value;$('#out').textContent=`Probability: ${(f/t).toFixed(6)} (${(f/t*100).toFixed(2)}%)`}

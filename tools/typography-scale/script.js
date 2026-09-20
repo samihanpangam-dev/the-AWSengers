@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let b=+$('#base').value||16,r=+$('#ratio').value||1.25;$('#out').textContent=[1,2,3,4,5].map(i=>`h${i}: ${(b*r**(6-i)).toFixed(1)}px`).join('\n')}

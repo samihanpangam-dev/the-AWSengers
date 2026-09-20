@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let s=$('#input').value,score=0;if(s.length>=8)score++;if(s.length>=12)score++;if(/[a-z]/.test(s)&&/[A-Z]/.test(s))score++;if(/\d/.test(s))score++;if(/[^A-Za-z0-9]/.test(s))score++;$('#out').textContent=`Score: ${score}/5 — ${['Very weak','Weak','Fair','Good','Strong','Excellent'][score]}`}

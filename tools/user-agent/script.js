@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let s=$('#input').value;$('#out').textContent=`Mobile: ${/Mobile|Android|iPhone/i.test(s)}\nChrome: ${/Chrome/i.test(s)}\nFirefox: ${/Firefox/i.test(s)}\nWindows: ${/Windows/i.test(s)}\nMac: ${/Mac OS/i.test(s)}`}

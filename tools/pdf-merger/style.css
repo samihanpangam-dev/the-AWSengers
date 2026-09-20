@@ -1,0 +1,723 @@
+/* =====================================
+   RESET
+===================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+:root {
+
+    --background: #070711;
+
+    --card: #10101c;
+
+    --border: #292940;
+
+    --purple: #a855f7;
+
+    --purple-light: #c084fc;
+
+    --text-muted: #9999ad;
+
+}
+
+
+/* =====================================
+   BODY
+===================================== */
+
+body {
+
+    min-height: 100vh;
+
+    background: var(--background);
+
+    color: white;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+}
+
+
+/* =====================================
+   NAVBAR
+===================================== */
+
+.navbar {
+
+    height: 75px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 8%;
+
+    border-bottom:
+        1px solid rgba(255,255,255,0.06);
+
+    background:
+        rgba(7,7,17,0.85);
+
+    backdrop-filter: blur(15px);
+
+}
+
+
+.logo {
+
+    color: white;
+
+    text-decoration: none;
+
+    font-size: 22px;
+
+    font-weight: bold;
+
+}
+
+
+.logo span {
+
+    color: var(--purple);
+
+}
+
+
+.back-button {
+
+    color: #aaaabd;
+
+    text-decoration: none;
+
+    font-size: 13px;
+
+    padding: 10px 16px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 8px;
+
+    transition: 0.3s;
+
+}
+
+
+.back-button:hover {
+
+    color: white;
+
+    border-color: var(--purple);
+
+}
+
+
+/* =====================================
+   MAIN CONTAINER
+===================================== */
+
+.container {
+
+    width: 90%;
+
+    max-width: 1100px;
+
+    margin: auto;
+
+    padding: 70px 0;
+
+}
+
+
+/* =====================================
+   HEADING
+===================================== */
+
+.page-heading {
+
+    text-align: center;
+
+    margin-bottom: 45px;
+
+}
+
+
+.tool-badge {
+
+    display: inline-block;
+
+    padding: 8px 14px;
+
+    border-radius: 30px;
+
+    background:
+        rgba(168,85,247,0.1);
+
+    border:
+        1px solid rgba(168,85,247,0.3);
+
+    color: var(--purple-light);
+
+    font-size: 10px;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.page-heading h1 {
+
+    font-size: 55px;
+
+    letter-spacing: -2px;
+
+    margin-bottom: 15px;
+
+}
+
+
+.page-heading h1 span {
+
+    color: var(--purple);
+
+    text-shadow:
+        0 0 25px rgba(168,85,247,0.35);
+
+}
+
+
+.page-heading p {
+
+    color: var(--text-muted);
+
+    max-width: 600px;
+
+    margin: auto;
+
+    line-height: 1.7;
+
+}
+
+
+/* =====================================
+   MERGER BOX
+===================================== */
+
+.merger-box {
+
+    background: var(--card);
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 18px;
+
+    padding: 25px;
+
+}
+
+
+/* =====================================
+   DROP AREA
+===================================== */
+
+.drop-area {
+
+    min-height: 300px;
+
+    border:
+        2px dashed #373752;
+
+    border-radius: 15px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    transition: 0.3s;
+
+}
+
+
+.drop-area.dragover {
+
+    border-color: var(--purple);
+
+    background:
+        rgba(168,85,247,0.07);
+
+    box-shadow:
+        0 0 30px rgba(168,85,247,0.1);
+
+}
+
+
+.upload-icon {
+
+    width: 75px;
+
+    height: 75px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background:
+        rgba(168,85,247,0.12);
+
+    border-radius: 20px;
+
+    font-size: 32px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.drop-area h2 {
+
+    font-size: 21px;
+
+    margin-bottom: 8px;
+
+}
+
+
+.drop-area p {
+
+    color: var(--text-muted);
+
+    font-size: 13px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.upload-button {
+
+    cursor: pointer;
+
+    background: var(--purple);
+
+    padding: 13px 22px;
+
+    border-radius: 8px;
+
+    font-size: 13px;
+
+    font-weight: bold;
+
+    transition: 0.3s;
+
+}
+
+
+.upload-button:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 0 25px rgba(168,85,247,0.4);
+
+}
+
+
+.drop-area small {
+
+    color: #66667a;
+
+    margin-top: 15px;
+
+    font-size: 11px;
+
+}
+
+
+/* =====================================
+   FILE SECTION
+===================================== */
+
+.file-section {
+
+    display: none;
+
+    margin-top: 25px;
+
+}
+
+
+.file-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 15px;
+
+}
+
+
+.file-header h3 {
+
+    font-size: 17px;
+
+}
+
+
+.clear-button {
+
+    background: transparent;
+
+    border: none;
+
+    color: #f87171;
+
+    cursor: pointer;
+
+    font-size: 12px;
+
+}
+
+
+/* =====================================
+   FILE LIST
+===================================== */
+
+.file-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+}
+
+
+.file-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    background: #0b0b15;
+
+    border:
+        1px solid #222238;
+
+    padding: 13px;
+
+    border-radius: 10px;
+
+}
+
+
+.file-number {
+
+    width: 32px;
+
+    height: 32px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background:
+        rgba(168,85,247,0.12);
+
+    color: var(--purple-light);
+
+    border-radius: 7px;
+
+    font-size: 12px;
+
+}
+
+
+.file-details {
+
+    flex: 1;
+
+}
+
+
+.file-name {
+
+    font-size: 13px;
+
+    margin-bottom: 4px;
+
+    word-break: break-all;
+
+}
+
+
+.file-size {
+
+    color: #66667a;
+
+    font-size: 10px;
+
+}
+
+
+.remove-file {
+
+    background: transparent;
+
+    border: none;
+
+    color: #77778b;
+
+    cursor: pointer;
+
+    font-size: 16px;
+
+}
+
+
+.remove-file:hover {
+
+    color: #f87171;
+
+}
+
+
+/* =====================================
+   MERGE BUTTON
+===================================== */
+
+.merge-button {
+
+    width: 100%;
+
+    margin-top: 20px;
+
+    padding: 16px;
+
+    background: var(--purple);
+
+    border: none;
+
+    color: white;
+
+    border-radius: 9px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+
+    font-weight: bold;
+
+    transition: 0.3s;
+
+}
+
+
+.merge-button:hover {
+
+    box-shadow:
+        0 0 30px rgba(168,85,247,0.4);
+
+    transform: translateY(-2px);
+
+}
+
+
+.merge-button:disabled {
+
+    opacity: 0.5;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+}
+
+
+/* =====================================
+   STATUS
+===================================== */
+
+.status {
+
+    text-align: center;
+
+    margin-top: 18px;
+
+    font-size: 13px;
+
+    color: var(--purple-light);
+
+}
+
+
+/* =====================================
+   INFO CARDS
+===================================== */
+
+.info-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 18px;
+
+    margin-top: 30px;
+
+}
+
+
+.info-card {
+
+    padding: 25px;
+
+    background: var(--card);
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 14px;
+
+}
+
+
+.info-card > div {
+
+    font-size: 25px;
+
+    margin-bottom: 15px;
+
+}
+
+
+.info-card h3 {
+
+    font-size: 15px;
+
+    margin-bottom: 8px;
+
+}
+
+
+.info-card p {
+
+    color: var(--text-muted);
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+}
+
+
+/* =====================================
+   FOOTER
+===================================== */
+
+footer {
+
+    text-align: center;
+
+    padding: 35px;
+
+    border-top:
+        1px solid var(--border);
+
+}
+
+
+footer p {
+
+    color: #77778b;
+
+    font-size: 12px;
+
+    margin-bottom: 10px;
+
+}
+
+
+footer a {
+
+    color: var(--purple);
+
+    font-size: 12px;
+
+    text-decoration: none;
+
+}
+
+
+/* =====================================
+   MOBILE
+===================================== */
+
+@media (max-width: 700px) {
+
+    .navbar {
+
+        padding: 0 5%;
+
+    }
+
+
+    .container {
+
+        width: 92%;
+
+        padding-top: 45px;
+
+    }
+
+
+    .page-heading h1 {
+
+        font-size: 42px;
+
+    }
+
+
+    .info-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .merger-box {
+
+        padding: 15px;
+
+    }
+
+}

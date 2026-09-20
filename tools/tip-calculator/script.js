@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let b=+$('#bill').value||0,p=+$('#tip').value||0,n=+$('#people').value||1;let t=b*p/100;$('#out').textContent=`Tip: ₹${t.toFixed(2)}\nTotal: ₹${(b+t).toFixed(2)}\nEach: ₹${((b+t)/n).toFixed(2)}`}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let d=JSON.parse(localStorage.getItem('itb-habit')||'{}');$('#run').onclick=()=>{let k=new Date().toISOString().slice(0,10);d[k]=!d[k];localStorage.setItem('itb-habit',JSON.stringify(d));$('#out').textContent=`Today: ${d[k]?'Completed ✓':'Not completed'}`}

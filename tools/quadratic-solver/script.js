@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=+$('#a').value,b=+$('#b').value,c=+$('#c').value,d=b*b-4*a*c;if(d<0)$('#out').textContent='Complex roots';else $('#out').textContent=`x₁=${((-b+Math.sqrt(d))/(2*a)).toFixed(6)}\nx₂=${((-b-Math.sqrt(d))/(2*a)).toFixed(6)}`}

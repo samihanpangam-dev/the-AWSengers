@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let s=$('#input').value;let sec=+$('#seconds').value||0;$('#out').textContent=s.replace(/(\d\d):(\d\d):(\d\d),(\d\d\d)/g,(m,h,mi,se,ms)=>{let t=+h*3600+ +mi*60+ +se+ +ms/1000+sec;let H=Math.floor(t/3600),M=Math.floor(t%3600/60),S=Math.floor(t%60),MS=Math.round((t%1)*1000);return `${String(H).padStart(2,'0')}:${String(M).padStart(2,'0')}:${String(S).padStart(2,'0')},${String(MS).padStart(3,'0')}`})}

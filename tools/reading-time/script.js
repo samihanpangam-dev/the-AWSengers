@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let n=($('#input').value.trim().match(/\S+/g)||[]).length;$('#out').textContent=`${n} words ≈ ${(n/200).toFixed(1)} minutes at 200 WPM`}

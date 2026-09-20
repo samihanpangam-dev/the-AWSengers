@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let d=new Date($('#date').value);let t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));let day=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-day);let y=new Date(Date.UTC(t.getUTCFullYear(),0,1));$('#out').textContent=`ISO week: ${Math.ceil((((t-y)/86400000)+1)/7)}`}

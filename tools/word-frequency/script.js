@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=($('#input').value.toLowerCase().match(/[a-z0-9']+/g)||[]),m={};a.forEach(w=>m[w]=(m[w]||0)+1);$('#out').textContent=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([w,n])=>`${w}: ${n}`).join('\n')}

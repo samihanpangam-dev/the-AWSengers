@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let d=new Date($('#date').value),n=new Date();$('#out').textContent=`Days remaining: ${Math.ceil((d-n)/86400000)}`}

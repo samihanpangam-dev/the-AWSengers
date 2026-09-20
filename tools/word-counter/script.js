@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function run(){let s=$('#input').value;let words=s.trim()?s.trim().split(/\s+/).length:0;$('#out').textContent=`Words: ${words}\nCharacters: ${s.length}\nLines: ${s?s.split(/\n/).length:0}\nSentences: ${(s.match(/[.!?]+/g)||[]).length}`};$('#run').onclick=run

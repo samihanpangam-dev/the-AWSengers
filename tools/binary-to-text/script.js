@@ -1,0 +1,1 @@
+const $=s=>document.querySelector(s);$('#run').onclick=()=>{try{$('#out').textContent=new TextDecoder().decode(new Uint8Array($('#input').value.trim().split(/\s+/).map(x=>parseInt(x,2))))}catch(e){$('#out').textContent='Invalid binary'}}

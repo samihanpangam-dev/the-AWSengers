@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=new Date('2000-01-01T'+$('#a').value),b=new Date('2000-01-01T'+$('#b').value);if(b<a)b.setDate(b.getDate()+1);let s=(b-a)/1000;$('#out').textContent=`${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m ${Math.floor(s%60)}s`}

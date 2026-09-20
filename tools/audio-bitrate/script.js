@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>$('#out').textContent=`Approx size: ${((+$('#kbps').value)*(+$('#minutes').value)*60/8/1024).toFixed(2)} MB`

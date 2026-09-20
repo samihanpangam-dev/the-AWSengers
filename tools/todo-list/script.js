@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let tasks=[];function draw(){localStorage.setItem('itb-todo',JSON.stringify(tasks));$('#out').innerHTML=tasks.map((x,i)=>`<div>☐ ${esc(x)} <button onclick="tasks.splice(${i},1);draw()">Delete</button></div>`).join('')||'No tasks'}tasks=JSON.parse(localStorage.getItem('itb-todo')||'[]');$('#run').onclick=()=>{if($('#input').value.trim())tasks.push($('#input').value.trim());$('#input').value='';draw()};draw()

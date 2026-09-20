@@ -1,0 +1,1 @@
+$('#run').onclick=async()=>{if(!file.files[0])return out.textContent='Choose a PDF';let p=await PDFLib.PDFDocument.load(await file.files[0].arrayBuffer());out.textContent=`Pages: ${p.getPageCount()}\nFile: ${file.files[0].name}\nSize: ${file.files[0].size.toLocaleString()} bytes`};

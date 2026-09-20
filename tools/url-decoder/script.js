@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{try{$('#out').textContent=decodeURIComponent($('#input').value)}catch(e){$('#out').textContent='Invalid URL encoding'}}

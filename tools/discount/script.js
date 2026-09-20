@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let p=+$('#price').value||0,d=+$('#discount').value||0;$('#out').textContent=`Savings: ₹${(p*d/100).toFixed(2)}\nFinal price: ₹${(p*(1-d/100)).toFixed(2)}`}

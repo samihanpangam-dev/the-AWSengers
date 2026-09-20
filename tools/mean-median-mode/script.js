@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=$('#input').value.split(/[,\s]+/).map(Number).filter(Number.isFinite).sort((a,b)=>a-b);if(!a.length)return $('#out').textContent='Enter numbers';let mean=a.reduce((x,y)=>x+y,0)/a.length,med=a[Math.floor(a.length/2)],m={};a.forEach(x=>m[x]=(m[x]||0)+1);let mode=Object.entries(m).sort((a,b)=>b[1]-a[1])[0][0];$('#out').textContent=`Mean: ${mean}\nMedian: ${med}\nMode: ${mode}`}

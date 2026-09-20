@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function m(p){return p===0?0:(0xffffffff<<(32-p))>>>0}function ip(n){return [n>>>24,(n>>>16)&255,(n>>>8)&255,n&255].join('.')}$('#run').onclick=()=>$('#out').textContent=ip(m(+$('#input').value))

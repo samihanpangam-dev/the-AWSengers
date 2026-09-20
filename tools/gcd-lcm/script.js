@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function g(a,b){while(b)[a,b]=[b,a%b];return Math.abs(a)}$('#run').onclick=()=>{let a=+$('#a').value,b=+$('#b').value,x=g(a,b);$('#out').textContent=`GCD: ${x}\nLCM: ${a&&b?Math.abs(a*b)/x:0}`}

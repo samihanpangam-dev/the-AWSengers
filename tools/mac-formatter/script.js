@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let x=$('#input').value.replace(/[^0-9a-f]/gi,'').toUpperCase();if(x.length!==12)return $('#out').textContent='Enter 12 hex digits';$('#out').textContent=x.match(/.{2}/g).join(':')}

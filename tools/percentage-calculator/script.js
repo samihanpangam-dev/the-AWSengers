@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=+$('#a').value||0,b=+$('#b').value||0;$('#out').textContent=`${b?((a/b)*100).toFixed(2):0}%`}

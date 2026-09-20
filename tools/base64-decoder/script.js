@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{try{$('#out').textContent=decodeURIComponent(escape(atob($('#input').value.trim())))}catch(e){$('#out').innerHTML='<span class="err">Invalid Base64</span>'}}

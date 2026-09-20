@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let f=+$('#focus').value,b=+$('#break').value,s=+$('#sessions').value;$('#out').textContent=`Focus score: ${Math.round(f/(f+b)*100)}%\nTotal focused minutes: ${f*s}`}

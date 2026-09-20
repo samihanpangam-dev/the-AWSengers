@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let s=$('#input').value;$('#out').textContent=`UPPER: ${s.toUpperCase()}\nLOWER: ${s.toLowerCase()}\nTITLE: ${s.toLowerCase().replace(/\b\w/g,m=>m.toUpperCase())}`}

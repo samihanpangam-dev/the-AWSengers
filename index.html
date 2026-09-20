@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinity Tool Box — The AWSengers</title>
+    <meta name="description" content="Infinity Tool Box — 209 powerful tools across multiple categories, built by The AWSengers.">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/agent-selector.css">
+</head>
+<body>
+    <div class="bg"><i></i><i></i><i></i></div>
+
+    <header class="navbar">
+        <a href="index.html" class="logo"><span>⚡</span><b>Infinity</b><small>Tool Box</small></a>
+        <a class="skip-link" href="#tools">Skip to tools</a>
+        <nav id="navLinks" aria-label="Primary navigation">
+            <a href="#home" data-scroll="home">Home</a>
+            <a href="#categories" data-scroll="categories">Categories</a>
+            <a href="#tools" data-scroll="tools">All Tools</a>
+            <a href="#about" data-scroll="about">About</a>
+        </nav>
+        <div class="nav-actions">
+            <button class="icon-btn" id="themeToggle" aria-label="Toggle color theme" type="button">🌙 Dark</button>
+            <button class="menu-btn" id="menuToggle" aria-label="Toggle navigation menu" aria-expanded="false" type="button">☰</button>
+        </div>
+    </header>
+
+    <main id="home">
+        <section class="hero">
+            <div class="hero-badge">⚡ THE AWSENGERS • INFINITY TOOL BOX</div>
+            <h1>One Platform.<br><span>Every Tool.</span></h1>
+            <p>PDFs, images, data, coding, AI, productivity, academics and everyday utilities — all in one place.</p>
+            <div class="hero-search"><span>⌕</span><input id="toolSearch" aria-label="Search all tools" type="search" placeholder="What tool are you looking for?  (Ctrl + K)"><button type="button" data-scroll="tools">Find Tool</button></div>
+            <div class="stats"><div><b>209</b><span>TOOLS</span></div><div><b>20</b><span>CORE CATEGORIES</span></div><div><b>209</b><span>ALL LIVE TOOLS</span></div></div>
+        </section>
+
+        <section class="agent-picker section" id="agents" aria-labelledby="agent-picker-title">
+            <div class="section-top">
+                <div>
+                    <span class="eyebrow">QUICK START</span>
+                    <h2 id="agent-picker-title">Choose your AWSenger</h2>
+                    <p>Open the integrated workspace and get to work without searching through the toolbox.</p>
+                </div>
+                <span class="result-pill">1 workspace</span>
+            </div>
+            <div class="agent-grid">
+                <a class="agent-card agent-card-primary" href="tools/awsengers-agent/index.html" data-agent="infinity-agent">
+                    <span class="agent-card-icon">⚡</span>
+                    <span class="agent-card-copy"><strong>Infinity AI Agent</strong><small>Use the integrated AWSengers media and file tools.</small><em>Open workspace <span aria-hidden="true">→</span></em></span>
+                </a>
+            </div>
+            <p class="agent-picker-note" id="agentPickerNote" role="status" aria-live="polite">Your last workspace is remembered on this device.</p>
+        </section>
+
+        <section class="section" id="categories">
+            <div class="section-top"><div><span class="eyebrow">EXPLORE</span><h2>Choose a Category</h2><p>Click any category and jump directly to its tools.</p></div></div>
+            <div id="categoryGrid" class="category-grid"></div>
+        </section>
+
+        <section class="section" id="tools">
+            <div class="section-top"><div><span class="eyebrow">TOOL LIBRARY</span><h2>All Tools</h2><p>Search globally or open any tool below.</p></div><span class="result-pill"><b id="resultCount">209</b> tools</span></div>
+            <div class="existing"><span class="eyebrow">ALREADY IN YOUR PROJECT</span><div class="existing-grid">
+                <a href="tools/pdf-merger/index.html"><span>📄</span><b>PDF Merger</b><small>Merge PDF files</small></a>
+                <a href="tools/pdf-splitter/index.html"><span>✂️</span><b>PDF Splitter</b><small>Extract PDF pages</small></a>
+                <a href="tools/image-compressor/index.html"><span>🗜️</span><b>Image Compressor</b><small>Compress images</small></a>
+                <a href="tools/image-converter/index.html"><span>🖼️</span><b>Image Converter</b><small>Convert image formats</small></a>
+            </div></div>
+            <div id="catalog"></div>
+        </section>
+
+        <section class="about section" id="about">
+            <span class="eyebrow">THE AWSENGERS</span><h2>Built as a real utility platform.</h2>
+            <p>Infinity Tool Box is designed so each tool lives independently inside the <b>tools/</b> folder. Category navigation only organizes the interface — it does not move your tools.</p>
+            <div class="about-grid"><div>⚡ <b>Browser First</b><small>Use client-side tools without a backend whenever possible.</small></div><div>🧩 <b>Modular</b><small>Every tool can have its own HTML, CSS and JavaScript.</small></div><div>🚀 <b>Expandable</b><small>Add more tools without rebuilding the whole homepage.</small></div></div>
+        </section>
+    </main>
+
+    <footer class="site-footer"><span>Infinity Tool Box · Built by <strong>The AWSengers</strong></span><nav aria-label="Legal"><a href="privacy.html">Privacy</a><a href="license.html">License &amp; attribution</a></nav></footer>
+    <footer><b>⚡ Infinity Tool Box</b><span>Built by The AWSengers • Everything you need. One place.</span></footer>
+    <script src="js/catalogue.js"></script>
+    <script src="js/script.js"></script>
+    <script src="js/agent-selector.js"></script>
+</body>
+</html>

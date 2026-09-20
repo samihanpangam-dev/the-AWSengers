@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let y=+$('#year').value;$('#out').textContent=(y%4===0&&y%100!==0||y%400===0)?'Leap year':'Not a leap year'}

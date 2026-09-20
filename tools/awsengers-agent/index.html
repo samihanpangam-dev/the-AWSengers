@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omni-File Agent — Asset Workspace</title>
+    <meta name="description" content="Omni-File AI Agent asset workspace with guaranteed media tools, PDF utilities, and interactive audio/video trimmer.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- LEFT SIDEBAR: Asset Workspace -->
+        <aside class="sidebar" id="sidebar" aria-label="Asset workspace">
+            <div class="sidebar-header">
+                <div class="brand-icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h2>Omni-File Agent</h2>
+                    <small>Asset workspace</small>
+                </div>
+                <a href="../../index.html" class="home-btn" title="Back to Infinity Tool Box" aria-label="Back to Infinity Tool Box">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </a>
+            </div>
+
+            <!-- Drop Assets Here Card -->
+            <div class="dropzone-card" id="dropzoneCard" tabindex="0" role="button" aria-label="Drop assets here or click to browse files">
+                <input type="file" id="fileInput" multiple accept=".pdf,.mp3,.mp4,.wav,.m4a,.aac,.avi,.mov,.mkv,.flac,.ogg,.jpg,.jpeg,.png" hidden>
+                <div class="cloud-icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
+                        <path d="M12 12v9"/>
+                        <path d="m16 16-4-4-4 4"/>
+                    </svg>
+                </div>
+                <p class="dropzone-title">Drop Assets Here</p>
+                <p class="dropzone-types">PDF, MP4, MP3, JPG</p>
+                <p class="dropzone-hint">or click to browse</p>
+            </div>
+
+            <!-- Uploaded Files Section -->
+            <div class="files-section">
+                <div class="files-header">
+                    <span class="files-label">UPLOADED FILES</span>
+                    <span class="count-pill" id="fileCountBadge">0</span>
+                </div>
+
+                <div class="files-list-container" id="filesListContainer">
+                    <div class="empty-files-state" id="emptyFilesState">
+                        No files yet. Uploaded assets will appear here.
+                    </div>
+                    <ul class="files-list" id="filesList" hidden></ul>
+                </div>
+            </div>
+
+            <!-- Settings / Backend configuration drawer toggle -->
+            <div class="sidebar-footer">
+                <button type="button" class="settings-toggle-btn" id="settingsToggle" aria-expanded="false" aria-controls="settingsPanel">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <span>Backend Settings</span>
+                </button>
+                <div class="settings-panel" id="settingsPanel" hidden>
+                    <label for="apiUrl">API URL</label>
+                    <input type="url" id="apiUrl" placeholder="http://localhost:8000">
+                    <label for="authHeader">Auth Header</label>
+                    <input type="text" id="authHeader" placeholder="Authorization">
+                    <label for="authToken">Auth Token</label>
+                    <input type="password" id="authToken" placeholder="Bearer …">
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CHAT AREA -->
+        <main class="main-content" id="mainContent">
+            <!-- Top App Bar -->
+            <header class="app-header">
+                <div class="header-left">
+                    <div class="bot-avatar" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="12" x="3" y="8" rx="2"/><path d="M12 2v6"/><circle cx="8" cy="14" r="1"/><circle cx="16" cy="14" r="1"/><path d="M9 17h6"/>
+                        </svg>
+                    </div>
+                    <div class="agent-title-block">
+                        <h1 class="agent-title">Omni-File AI Agent</h1>
+                        <div class="status-indicator">
+                            <span class="status-dot offline" id="statusDot"></span>
+                            <span class="status-text" id="statusText">Backend offline</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <span class="assets-badge" id="assetsLoadedBadge">0 assets loaded</span>
+                </div>
+            </header>
+
+            <!-- Offline Warning Banner -->
+            <div class="offline-banner" id="offlineBanner" role="alert">
+                <div class="banner-text">
+                    <span class="banner-icon" aria-hidden="true">⚠️</span>
+                    <span>Backend unreachable — the Cloudflare tunnel may be down or the host Mac is asleep.</span>
+                </div>
+                <button type="button" class="retry-btn" id="retryButton">Retry</button>
+            </div>
+
+            <!-- Chat Messages Container -->
+            <div class="chat-container" id="chatContainer" role="log" aria-live="polite">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Initial Welcome Message -->
+                    <div class="message-row bot-row">
+                        <div class="msg-avatar" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect width="18" height="12" x="3" y="8" rx="2"/><path d="M12 2v6"/><circle cx="8" cy="14" r="1"/><circle cx="16" cy="14" r="1"/><path d="M9 17h6"/>
+                            </svg>
+                        </div>
+                        <div class="msg-bubble bot-bubble">
+                            <p>Hi! I'm your Omni-File agent. Drop a PDF, video, audio, or image in the sidebar and ask me anything about it — I'll run a code interpreter to analyse it.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Chat Input Bar -->
+            <div class="chat-input-bar">
+                <form class="input-form" id="chatForm">
+                    <input 
+                        type="text" 
+                        id="chatInput" 
+                        class="chat-input" 
+                        placeholder="Ask about your uploaded files..." 
+                        autocomplete="off" 
+                        aria-label="Ask about your uploaded files"
+                    >
+                    <button type="submit" id="sendButton" class="send-btn" aria-label="Send message">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- TRIM MEDIA POP-UP / MODAL -->
+    <dialog class="trim-modal" id="trimModal" aria-labelledby="trimModalTitle">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span class="modal-icon" aria-hidden="true">✂️</span>
+                    <div>
+                        <h2 class="modal-title" id="trimModalTitle">Trim Media</h2>
+                        <p class="modal-subtitle" id="trimTargetName">Select range to trim</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-close-btn" id="closeTrimModal" aria-label="Close modal">✕</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Video / Audio Player Preview -->
+                <div class="preview-stage" id="previewStage">
+                    <video id="trimVideoPreview" playsinline controls class="media-preview" hidden></video>
+                    <audio id="trimAudioPreview" controls class="media-preview" hidden></audio>
+                    <div id="audioWaveformVisual" class="audio-waveform-visual" hidden>
+                        <div class="waveform-bars">
+                            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                        <p class="audio-track-label" id="audioTrackLabel">Audio Preview</p>
+                    </div>
+                </div>
+
+                <!-- Trim Controls -->
+                <div class="trim-controls">
+                    <div class="trim-time-indicators">
+                        <div class="time-stat">
+                            <span class="stat-label">Start Time</span>
+                            <div class="stat-input-group">
+                                <input type="text" id="startTimeInput" class="time-input" value="00:00:00" aria-label="Start time">
+                                <button type="button" class="btn-micro" id="setStartCurrentBtn" title="Set to current playback position">Current</button>
+                            </div>
+                        </div>
+                        <div class="time-stat">
+                            <span class="stat-label">Trimmed Duration</span>
+                            <span class="stat-value highlight" id="trimmedDurationDisplay">00:00:00</span>
+                        </div>
+                        <div class="time-stat">
+                            <span class="stat-label">End Time</span>
+                            <div class="stat-input-group">
+                                <input type="text" id="endTimeInput" class="time-input" value="00:00:00" aria-label="End time">
+                                <button type="button" class="btn-micro" id="setEndCurrentBtn" title="Set to current playback position">Current</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dual Slider Range Bar -->
+                    <div class="range-slider-wrapper">
+                        <div class="range-track-bg"></div>
+                        <div class="range-track-highlight" id="rangeTrackHighlight"></div>
+                        <input type="range" id="startRange" min="0" max="100" value="0" step="0.1" class="dual-range-slider" aria-label="Trim start slider">
+                        <input type="range" id="endRange" min="0" max="100" value="100" step="0.1" class="dual-range-slider" aria-label="Trim end slider">
+                    </div>
+
+                    <div class="trim-actions-row">
+                        <button type="button" class="btn-secondary" id="previewTrimSelectionBtn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                            <span>Preview Selection</span>
+                        </button>
+                        <span class="playback-current" id="playbackCurrentDisplay">Current: 00:00:00 / Total: 00:00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost" id="cancelTrimBtn">Cancel</button>
+                <button type="button" class="btn-primary" id="applyTrimBtn">Trim with AI Agent</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

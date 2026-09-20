@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=new Date($('#a').value),b=new Date($('#b').value),n=0;for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1)){let x=d.getDay();if(x&&x<6)n++}$('#out').textContent=`Business days: ${n}`}

@@ -1,0 +1,1 @@
+const $=s=>document.querySelector(s);$('#run').onclick=()=>$('#out').textContent=[...new TextEncoder().encode($('#input').value)].map(x=>x.toString(2).padStart(8,'0')).join(' ')

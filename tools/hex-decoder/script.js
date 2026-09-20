@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{try{let a=$('#input').value.trim().split(/\s+/).map(x=>parseInt(x,16));$('#out').textContent=new TextDecoder().decode(new Uint8Array(a))}catch(e){$('#out').textContent='Invalid hexadecimal'}}

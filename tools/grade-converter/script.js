@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let p=+$('#p').value;$('#out').textContent=p>=90?'A+':p>=80?'A':p>=70?'B':p>=60?'C':p>=50?'D':'F'}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let p=+$('#p').value,g=+$('#g').value;$('#out').textContent=`GST: ${(p*g/100).toFixed(2)}\nTotal: ${(p*(1+g/100)).toFixed(2)}`}

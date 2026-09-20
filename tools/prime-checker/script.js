@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let n=+$('#n').value;if(n<2)return $('#out').textContent='Not prime';for(let i=2;i*i<=n;i++)if(n%i===0)return $('#out').textContent='Not prime';$('#out').textContent='Prime ✓'}

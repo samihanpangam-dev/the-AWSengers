@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Compressor | Infinity Tool Box</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body><a class="skip-link" href="#main-content">Skip to content</a>
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="../../index.html" class="logo">Infinity <span>Tool Box</span></a>
+            <a href="../../index.html" class="back-btn">← Back to ToolBox</a>
+        </div>
+    </nav>
+
+    <main id="main-content" class="container">
+        <section class="hero">
+            <div class="badge">IMAGE TOOL • TOOL #03</div>
+            <h1>Image <span>Compressor</span></h1>
+            <p>Reduce image file sizes directly in your browser while keeping the quality under your control.</p>
+        </section>
+
+        <section class="compressor-card">
+            <div id="dropZone" class="drop-zone">
+                <div class="upload-icon">🖼️</div>
+                <h2>Drop your images here</h2>
+                <p>or choose images from your device</p>
+                <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+                <button id="chooseBtn" class="primary-btn">Choose Images</button>
+                <small>JPG, PNG and WebP • Multiple files supported</small>
+            </div>
+
+            <div class="controls">
+                <div class="control-header">
+                    <div>
+                        <h3>Compression Quality</h3>
+                        <p>Higher quality = larger file size</p>
+                    </div>
+                    <strong id="qualityValue">80%</strong>
+                </div>
+                <input id="quality" type="range" min="10" max="100" value="80">
+                <div class="range-labels"><span>Smaller file</span><span>Better quality</span></div>
+
+                <div class="format-row">
+                    <label for="format">Output format</label>
+                    <select id="format">
+                        <option value="original">Keep original</option>
+                        <option value="image/jpeg">JPEG</option>
+                        <option value="image/webp">WebP</option>
+                        <option value="image/png">PNG</option>
+                    </select>
+                </div>
+
+                <button id="compressBtn" class="compress-btn" disabled>⚡ Compress Images</button>
+            </div>
+        </section>
+
+        <section id="resultsSection" class="results-section hidden">
+            <div class="results-header">
+                <div>
+                    <h2>Compression Results</h2>
+                    <p id="summary"></p>
+                </div>
+                <button id="clearBtn" class="secondary-btn">Clear All</button>
+            </div>
+            <div id="results"></div>
+        </section>
+
+        <p class="privacy-note">🔒 Your images are processed locally in your browser. They are not uploaded to a server.</p>
+    </main>
+
+    <script src="script.js"></script>
+<footer class="site-footer"><span>Results are informational and not medical, legal, tax, or financial advice.</span><nav aria-label="Legal"><a href="../../privacy.html">Privacy</a><a href="../../license.html">License &amp; attribution</a></nav></footer></body>
+</html>

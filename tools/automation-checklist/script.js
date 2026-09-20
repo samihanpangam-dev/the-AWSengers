@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{$('#out').textContent=`Goal: ${$('#input').value}\n☐ Define requirements\n☐ Identify inputs\n☐ Select tools\n☐ Build workflow\n☐ Test edge cases\n☐ Add logging\n☐ Document\n☐ Review`}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>$('#out').textContent=`BSA: ${Math.sqrt((+$('#h').value)*(+$('#w').value)/3600).toFixed(3)} m²`

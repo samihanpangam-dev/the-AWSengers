@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let s=$('#input').value.split(/(?<=[.!?])\s+/).filter(Boolean);let words=new Set(($('#input').value.toLowerCase().match(/[a-z]+/g)||[]));$('#out').textContent=s.slice(0,Math.max(1,Math.ceil(s.length*.3))).join(' ')}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{try{let r=new RegExp($('#pattern').value,$('#flags').value);let m=$('#input').value.match(r);$('#out').textContent=m?`Match: ${m[0]}`:'No match'}catch(e){$('#out').textContent=e.message}}

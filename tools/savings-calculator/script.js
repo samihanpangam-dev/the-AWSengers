@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let start=+$('#start').value,monthly=+$('#monthly').value,rate=(+$('#rate').value||0)/1200,months=+$('#months').value;let a=start*(1+rate)**months+monthly*((1+rate)**months-1)/rate; if(!rate)a=start+monthly*months;$('#out').textContent=`Estimated balance: ${a.toFixed(2)}`}

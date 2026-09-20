@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let rows=$('#input').value.trim().split('\n').map(x=>x.split(',')),cols=rows[0]?.length||0;let o=[];for(let c=0;c<cols;c++){let a=rows.slice(1).map(r=>+r[c]).filter(Number.isFinite);if(a.length)o.push(`${rows[0][c]}: min ${Math.min(...a)}, max ${Math.max(...a)}, avg ${(a.reduce((x,y)=>x+y,0)/a.length).toFixed(2)}`)}$('#out').textContent=o.join('\n')}

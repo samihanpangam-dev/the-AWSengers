@@ -1,0 +1,608 @@
+/* =========================================================
+   INFINITY THEME
+   Six-energy-stone inspired interface
+========================================================= */
+
+:root {
+
+    /* SPACE — BLUE */
+    --space: #2563eb;
+
+    /* MIND — YELLOW */
+    --mind: #facc15;
+
+    /* REALITY — RED */
+    --reality: #ef4444;
+
+    /* POWER — PURPLE */
+    --power: #a855f7;
+
+    /* TIME — GREEN */
+    --time: #22c55e;
+
+    /* SOUL — ORANGE */
+    --soul: #f97316;
+
+
+    --bg: #050509;
+
+    --bg-secondary: #0b0b13;
+
+    --card: #10101a;
+
+    --border: #29293c;
+
+    --text: #ffffff;
+
+    --text-muted: #9a9aae;
+
+    --primary: var(--power);
+
+}
+
+
+/* =========================================================
+   BODY
+========================================================= */
+
+body {
+
+    background:
+
+        radial-gradient(
+            circle at 10% 20%,
+            rgba(168,85,247,0.09),
+            transparent 25%
+        ),
+
+        radial-gradient(
+            circle at 90% 20%,
+            rgba(37,99,235,0.08),
+            transparent 25%
+        ),
+
+        radial-gradient(
+            circle at 50% 100%,
+            rgba(34,197,94,0.06),
+            transparent 30%
+        ),
+
+        var(--bg);
+
+}
+
+
+/* =========================================================
+   NAVBAR
+========================================================= */
+
+.navbar {
+
+    background:
+        rgba(5,5,9,0.88);
+
+    border-bottom:
+        1px solid rgba(168,85,247,0.3);
+
+}
+
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+.logo-icon,
+.logo-highlight {
+
+    color: var(--power);
+
+    text-shadow:
+        0 0 15px rgba(168,85,247,0.7);
+
+}
+
+
+/* =========================================================
+   NAV LINKS
+========================================================= */
+
+.navbar nav a:hover {
+
+    color: var(--mind);
+
+}
+
+
+/* =========================================================
+   NAV BUTTON
+========================================================= */
+
+.nav-button {
+
+    border-color: var(--power);
+
+}
+
+.nav-button:hover {
+
+    background: var(--power);
+
+    box-shadow:
+        0 0 25px rgba(168,85,247,0.5);
+
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.hero::before {
+
+    background:
+        rgba(168,85,247,0.13);
+
+}
+
+.hero::after {
+
+    background:
+        rgba(37,99,235,0.10);
+
+}
+
+
+/* =========================================================
+   HERO BADGE
+========================================================= */
+
+.hero-badge {
+
+    border-color:
+        rgba(168,85,247,0.5);
+
+    color:
+        #d8b4fe;
+
+    background:
+        rgba(168,85,247,0.08);
+
+}
+
+
+/* =========================================================
+   HERO TITLE
+========================================================= */
+
+.hero h1 span {
+
+    color: var(--power);
+
+    text-shadow:
+
+        0 0 20px
+        rgba(168,85,247,0.7),
+
+        0 0 70px
+        rgba(168,85,247,0.2);
+
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.primary-btn {
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--power),
+            #6d28d9
+        );
+
+    box-shadow:
+        0 0 25px rgba(168,85,247,0.3);
+
+}
+
+.primary-btn:hover {
+
+    box-shadow:
+        0 0 40px rgba(168,85,247,0.6);
+
+}
+
+.secondary-btn:hover {
+
+    border-color:
+        var(--space);
+
+    color:
+        var(--space);
+
+}
+
+
+/* =========================================================
+   ORBIT
+========================================================= */
+
+.tool-orbit {
+
+    border-color:
+        rgba(168,85,247,0.45);
+
+}
+
+
+.central-box {
+
+    border-color:
+        var(--power);
+
+    box-shadow:
+
+        0 0 35px
+        rgba(168,85,247,0.35),
+
+        inset 0 0 30px
+        rgba(168,85,247,0.08);
+
+}
+
+.central-box span {
+
+    color: var(--power);
+
+}
+
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.stat strong {
+
+    color: var(--power);
+
+    text-shadow:
+        0 0 15px rgba(168,85,247,0.5);
+
+}
+
+
+/* =========================================================
+   SECTION LABELS
+========================================================= */
+
+.section-heading > span,
+.section-label {
+
+    color: var(--mind);
+
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.search-box:focus-within {
+
+    border-color:
+        var(--power);
+
+    box-shadow:
+        0 0 25px rgba(168,85,247,0.15);
+
+}
+
+
+/* =========================================================
+   CATEGORY CARDS
+========================================================= */
+
+.category-card:hover {
+
+    border-color:
+        var(--power);
+
+    box-shadow:
+        0 15px 40px rgba(0,0,0,0.4),
+
+        0 0 25px
+        rgba(168,85,247,0.1);
+
+}
+
+
+/* =========================================================
+   CATEGORY COLOR SYSTEM
+========================================================= */
+
+/* PDF = POWER */
+
+.category-card:nth-child(1) .category-icon {
+
+    background:
+        rgba(168,85,247,0.15);
+
+}
+
+
+/* IMAGE = SPACE */
+
+.category-card:nth-child(2) .category-icon {
+
+    background:
+        rgba(37,99,235,0.15);
+
+}
+
+
+/* SECURITY = TIME */
+
+.category-card:nth-child(3) .category-icon {
+
+    background:
+        rgba(34,197,94,0.15);
+
+}
+
+
+/* DEVELOPER = SOUL */
+
+.category-card:nth-child(4) .category-icon {
+
+    background:
+        rgba(249,115,22,0.15);
+
+}
+
+
+/* DATA = REALITY */
+
+.category-card:nth-child(5) .category-icon {
+
+    background:
+        rgba(239,68,68,0.15);
+
+}
+
+
+/* STUDENT = MIND */
+
+.category-card:nth-child(6) .category-icon {
+
+    background:
+        rgba(250,204,21,0.15);
+
+}
+
+
+/* =========================================================
+   CATEGORY TEXT
+========================================================= */
+
+.category-card:nth-child(1) span {
+    color: var(--power);
+}
+
+.category-card:nth-child(2) span {
+    color: var(--space);
+}
+
+.category-card:nth-child(3) span {
+    color: var(--time);
+}
+
+.category-card:nth-child(4) span {
+    color: var(--soul);
+}
+
+.category-card:nth-child(5) span {
+    color: var(--reality);
+}
+
+.category-card:nth-child(6) span {
+    color: var(--mind);
+}
+
+
+/* =========================================================
+   TOOL CARDS
+========================================================= */
+
+.tool-card:hover {
+
+    border-color:
+        rgba(168,85,247,0.6);
+
+}
+
+
+/* =========================================================
+   TOOL ICON COLORS
+========================================================= */
+
+.tool-card:nth-child(1) .tool-icon {
+    background: rgba(168,85,247,0.14);
+}
+
+.tool-card:nth-child(2) .tool-icon {
+    background: rgba(168,85,247,0.14);
+}
+
+.tool-card:nth-child(3) .tool-icon {
+    background: rgba(37,99,235,0.14);
+}
+
+.tool-card:nth-child(4) .tool-icon {
+    background: rgba(37,99,235,0.14);
+}
+
+.tool-card:nth-child(5) .tool-icon {
+    background: rgba(37,99,235,0.14);
+}
+
+.tool-card:nth-child(6) .tool-icon {
+    background: rgba(34,197,94,0.14);
+}
+
+.tool-card:nth-child(7) .tool-icon {
+    background: rgba(34,197,94,0.14);
+}
+
+.tool-card:nth-child(8) .tool-icon {
+    background: rgba(249,115,22,0.14);
+}
+
+.tool-card:nth-child(9) .tool-icon {
+    background: rgba(239,68,68,0.14);
+}
+
+.tool-card:nth-child(10) .tool-icon {
+    background: rgba(250,204,21,0.14);
+}
+
+
+/* =========================================================
+   OPEN TOOL
+========================================================= */
+
+.open-tool {
+
+    color: var(--power);
+
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.live {
+
+    color: var(--time);
+
+    background:
+        rgba(34,197,94,0.1);
+
+}
+
+.soon {
+
+    color: var(--mind);
+
+    background:
+        rgba(250,204,21,0.08);
+
+}
+
+
+/* =========================================================
+   COMING SOON
+========================================================= */
+
+.coming-section {
+
+    background:
+
+        radial-gradient(
+            circle at 90% 50%,
+            rgba(168,85,247,0.14),
+            transparent 40%
+        ),
+
+        radial-gradient(
+            circle at 10% 50%,
+            rgba(37,99,235,0.08),
+            transparent 35%
+        );
+
+}
+
+.coming-content h2 span {
+
+    color: var(--power);
+
+}
+
+.coming-number {
+
+    color:
+        rgba(168,85,247,0.15);
+
+}
+
+
+/* =========================================================
+   ABOUT
+========================================================= */
+
+.about-text h2 span {
+
+    color:
+        var(--power);
+
+}
+
+.vision-cards > div:hover {
+
+    border-color:
+        rgba(168,85,247,0.5);
+
+}
+
+.vision-cards span {
+
+    color:
+        var(--mind);
+
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+footer {
+
+    border-top:
+        1px solid rgba(168,85,247,0.25);
+
+}
+
+.footer-links a:hover {
+
+    color:
+        var(--power);
+
+}
+/* =====================================
+   INFINITY THEME SWITCHER
+===================================== */
+.theme-toggle {
+
+    background: #0d0b16;
+
+    border-color:
+        rgba(168,85,247,0.4);
+
+    color: #d8b4fe;
+
+}
+.theme-toggle:hover {
+
+    border-color:
+        var(--mind);
+
+    color:
+        var(--mind);
+
+    box-shadow:
+        0 0 20px rgba(168,85,247,0.25);
+
+}

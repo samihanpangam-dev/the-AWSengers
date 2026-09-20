@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let rows=$('#input').value.trim().split('\n').map(x=>x.split(','));$('#out').innerHTML='<table>'+rows.map(r=>'<tr>'+r.map(c=>'<td style="border:1px solid #533;padding:6px">'+esc(c)+'</td>').join('')+'</tr>').join('')+'</table>'}

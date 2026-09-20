@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const m={pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',json:'application/json',csv:'text/csv',txt:'text/plain',html:'text/html',css:'text/css',js:'text/javascript',mp3:'audio/mpeg',mp4:'video/mp4'};$('#run').onclick=()=>{let e=$('#input').value.toLowerCase().replace(/^\./,'');$('#out').textContent=m[e]||'Unknown/common MIME type not found'}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let lines=$('#input').value.split('\n').filter(Boolean);$('#out').textContent=lines.map((x,i)=>`CARD ${i+1}\n${x.replace('|','\nAnswer: ')}`).join('\n\n')}

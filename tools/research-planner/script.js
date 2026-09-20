@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{$('#out').textContent=`Research question: ${$('#input').value}\n1. Define scope\n2. Collect primary sources\n3. Compare evidence\n4. Identify limitations\n5. Synthesize findings\n6. Cite sources\n7. Review conclusions`}

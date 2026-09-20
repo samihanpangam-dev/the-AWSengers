@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let y=+$('#y').value,m=(+$('#m').value)-1,first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),out='Su Mo Tu We Th Fr Sa\n';for(let i=0;i<first;i++)out+='   ';for(let d=1;d<=days;d++){out+=String(d).padStart(2,' ')+' ';if((first+d)%7===0)out+='\n'}$('#out').textContent=out}

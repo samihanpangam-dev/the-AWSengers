@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let n=Number($('#n').value)||32;let a=new Uint8Array(Math.ceil(n/2));crypto.getRandomValues(a);$('#out').textContent=[...a].map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,n)}

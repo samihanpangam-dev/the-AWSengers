@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{try{JSON.parse($('#input').value);$('#out').innerHTML='<span class="ok">Valid JSON ✓</span>'}catch(e){$('#out').innerHTML='<span class="err">Invalid JSON: '+esc(e.message)+'</span>'}}

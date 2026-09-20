@@ -1,0 +1,1 @@
+const $=s=>document.querySelector(s);$('#run').onclick=()=>{try{$('#out').textContent=JSON.stringify(JSON.parse($('#input').value))}catch(e){$('#out').textContent='Invalid JSON: '+e.message}}

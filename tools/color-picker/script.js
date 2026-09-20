@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let x=$('#input').value.trim();if(!/^#[0-9a-f]{6}$/i.test(x))return $('#out').textContent='Use #RRGGBB';let n=parseInt(x.slice(1),16);$('#out').textContent=`HEX: ${x}\nRGB: ${n>>16}, ${(n>>8)&255}, ${n&255}`}

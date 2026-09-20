@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let u=new URL($('#url').value);[['utm_source','source'],['utm_medium','medium'],['utm_campaign','campaign']].forEach(([a,b])=>u.searchParams.set(a,$('#'+b).value));$('#out').textContent=u.href}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=$('#input').value.split('\n'),m={},d=[];a.forEach(x=>m[x]=(m[x]||0)+1);Object.entries(m).forEach(([x,n])=>{if(n>1)d.push(`${n}× ${x}`)});$('#out').textContent=d.join('\n')||'No duplicate rows'}

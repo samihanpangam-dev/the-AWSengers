@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>$('#out').textContent=`box-shadow: ${$('#x').value}px ${$('#y').value}px ${$('#blur').value}px ${$('#spread').value}px ${$('#color').value};`

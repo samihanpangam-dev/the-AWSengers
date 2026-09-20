@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{try{let s=$('#input').value.replace(/\^/g,'**');if(!/^[0-9+\-*/().%\s*]+$/.test(s))throw Error('Only basic arithmetic is allowed');$('#out').textContent=Function('return '+s)()}catch(e){$('#out').textContent='Invalid expression'}}

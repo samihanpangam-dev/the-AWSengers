@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=new Date($('#a').value),b=new Date($('#b').value);$('#out').textContent=`${Math.round(Math.abs(b-a)/86400000)} days`}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let n=Number($('#n').value)||12,c=Number($('#charset').value)||94;$('#out').textContent=`Estimated entropy: ${(n*Math.log2(c)).toFixed(2)} bits`}

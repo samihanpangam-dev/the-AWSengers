@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=$('#input').value.split(/[,\s]+/).map(Number).filter(Number.isFinite),m=a.reduce((x,y)=>x+y,0)/a.length,v=a.reduce((x,y)=>x+(y-m)**2,0)/a.length;$('#out').textContent=`Population SD: ${Math.sqrt(v).toFixed(6)}`}

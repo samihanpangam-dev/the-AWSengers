@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function ip2n(s){return s.split('.').reduce((a,x)=>(a<<8)+(+x),0)>>>0}$('#run').onclick=()=>$('#out').textContent=ip2n($('#input').value.trim())

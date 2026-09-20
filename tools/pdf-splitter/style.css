@@ -1,0 +1,888 @@
+/* =====================================
+   RESET
+===================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+:root {
+
+    --background: #070711;
+
+    --card: #10101c;
+
+    --border: #292940;
+
+    --purple: #a855f7;
+
+    --purple-light: #c084fc;
+
+    --text-muted: #9999ad;
+
+}
+
+
+/* =====================================
+   BODY
+===================================== */
+
+body {
+
+    min-height: 100vh;
+
+    background:
+
+        radial-gradient(
+            circle at 50% -20%,
+            rgba(168,85,247,0.12),
+            transparent 35%
+        ),
+
+        var(--background);
+
+    color: white;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+}
+
+
+/* =====================================
+   NAVBAR
+===================================== */
+
+.navbar {
+
+    height: 75px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 8%;
+
+    background:
+        rgba(7,7,17,0.88);
+
+    border-bottom:
+        1px solid rgba(168,85,247,0.2);
+
+    backdrop-filter: blur(15px);
+
+}
+
+
+.logo {
+
+    color: white;
+
+    text-decoration: none;
+
+    font-size: 22px;
+
+    font-weight: 900;
+
+}
+
+
+.logo span {
+
+    color: var(--purple);
+
+}
+
+
+.back-button {
+
+    color: #aaaabd;
+
+    text-decoration: none;
+
+    font-size: 13px;
+
+    padding: 10px 16px;
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 8px;
+
+    transition: 0.3s;
+
+}
+
+
+.back-button:hover {
+
+    color: white;
+
+    border-color: var(--purple);
+
+}
+
+
+/* =====================================
+   CONTAINER
+===================================== */
+
+.container {
+
+    width: 90%;
+
+    max-width: 1050px;
+
+    margin: auto;
+
+    padding: 70px 0;
+
+}
+
+
+/* =====================================
+   HEADING
+===================================== */
+
+.page-heading {
+
+    text-align: center;
+
+    margin-bottom: 45px;
+
+}
+
+
+.tool-badge {
+
+    display: inline-block;
+
+    padding: 8px 14px;
+
+    border-radius: 30px;
+
+    background:
+        rgba(168,85,247,0.1);
+
+    border:
+        1px solid rgba(168,85,247,0.3);
+
+    color: var(--purple-light);
+
+    font-size: 10px;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.page-heading h1 {
+
+    font-size: 55px;
+
+    letter-spacing: -2px;
+
+    margin-bottom: 15px;
+
+}
+
+
+.page-heading h1 span {
+
+    color: var(--purple);
+
+    text-shadow:
+        0 0 25px rgba(168,85,247,0.4);
+
+}
+
+
+.page-heading p {
+
+    max-width: 600px;
+
+    margin: auto;
+
+    color: var(--text-muted);
+
+    line-height: 1.7;
+
+}
+
+
+/* =====================================
+   SPLITTER BOX
+===================================== */
+
+.splitter-box {
+
+    background: var(--card);
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 18px;
+
+    padding: 25px;
+
+}
+
+
+/* =====================================
+   DROP AREA
+===================================== */
+
+.drop-area {
+
+    min-height: 290px;
+
+    border:
+        2px dashed #373752;
+
+    border-radius: 15px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+
+    transition: 0.3s;
+
+}
+
+
+.drop-area.dragover {
+
+    border-color: var(--purple);
+
+    background:
+        rgba(168,85,247,0.07);
+
+    box-shadow:
+        0 0 30px rgba(168,85,247,0.1);
+
+}
+
+
+.upload-icon {
+
+    width: 75px;
+
+    height: 75px;
+
+    border-radius: 20px;
+
+    background:
+        rgba(168,85,247,0.12);
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 32px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.drop-area h2 {
+
+    font-size: 21px;
+
+    margin-bottom: 8px;
+
+}
+
+
+.drop-area p {
+
+    color: var(--text-muted);
+
+    font-size: 13px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.upload-button {
+
+    background: var(--purple);
+
+    color: white;
+
+    padding: 13px 22px;
+
+    border-radius: 8px;
+
+    font-size: 13px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+
+}
+
+
+.upload-button:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 0 25px rgba(168,85,247,0.4);
+
+}
+
+
+.drop-area small {
+
+    margin-top: 15px;
+
+    color: #66667a;
+
+    font-size: 11px;
+
+}
+
+
+/* =====================================
+   PDF SECTION
+===================================== */
+
+.pdf-section {
+
+    display: none;
+
+    margin-top: 25px;
+
+}
+
+
+/* =====================================
+   PDF INFO
+===================================== */
+
+.pdf-info {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    padding: 18px;
+
+    background: #0b0b15;
+
+    border:
+        1px solid #24243a;
+
+    border-radius: 12px;
+
+}
+
+
+.pdf-icon {
+
+    width: 48px;
+
+    height: 48px;
+
+    border-radius: 10px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background:
+        rgba(168,85,247,0.12);
+
+    font-size: 22px;
+
+}
+
+
+.pdf-info div:nth-child(2) {
+
+    flex: 1;
+
+}
+
+
+.pdf-info h3 {
+
+    font-size: 14px;
+
+    margin-bottom: 5px;
+
+    word-break: break-all;
+
+}
+
+
+.pdf-info p {
+
+    color: var(--text-muted);
+
+    font-size: 11px;
+
+}
+
+
+.remove-button {
+
+    background: transparent;
+
+    border: none;
+
+    color: #77778b;
+
+    cursor: pointer;
+
+    font-size: 18px;
+
+}
+
+
+.remove-button:hover {
+
+    color: #f87171;
+
+}
+
+
+/* =====================================
+   RANGE
+===================================== */
+
+.range-section {
+
+    margin-top: 25px;
+
+}
+
+
+.range-section label {
+
+    display: block;
+
+    font-size: 13px;
+
+    font-weight: bold;
+
+    margin-bottom: 10px;
+
+}
+
+
+.range-section input {
+
+    width: 100%;
+
+    height: 52px;
+
+    padding: 0 15px;
+
+    background: #0b0b15;
+
+    border:
+        1px solid #292940;
+
+    border-radius: 8px;
+
+    color: white;
+
+    outline: none;
+
+    font-size: 14px;
+
+}
+
+
+.range-section input:focus {
+
+    border-color: var(--purple);
+
+    box-shadow:
+        0 0 20px rgba(168,85,247,0.1);
+
+}
+
+
+.range-section input::placeholder {
+
+    color: #66667a;
+
+}
+
+
+.range-help {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 10px;
+
+    flex-wrap: wrap;
+
+}
+
+
+.range-help span {
+
+    color: #77778b;
+
+    font-size: 11px;
+
+}
+
+
+.range-help code {
+
+    padding: 4px 8px;
+
+    border-radius: 4px;
+
+    background: #181827;
+
+    color: var(--purple-light);
+
+    font-size: 10px;
+
+}
+
+
+/* =====================================
+   SPLIT BUTTON
+===================================== */
+
+.split-button {
+
+    width: 100%;
+
+    margin-top: 25px;
+
+    padding: 16px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: var(--purple);
+
+    color: white;
+
+    cursor: pointer;
+
+    font-size: 14px;
+
+    font-weight: bold;
+
+    transition: 0.3s;
+
+}
+
+
+.split-button:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 0 30px rgba(168,85,247,0.4);
+
+}
+
+
+.split-button:disabled {
+
+    opacity: 0.5;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+}
+
+
+/* =====================================
+   STATUS
+===================================== */
+
+.status {
+
+    text-align: center;
+
+    margin-top: 18px;
+
+    color: var(--purple-light);
+
+    font-size: 13px;
+
+}
+
+
+/* =====================================
+   STEPS
+===================================== */
+
+.steps {
+
+    margin-top: 90px;
+
+}
+
+
+.section-heading {
+
+    text-align: center;
+
+    margin-bottom: 35px;
+
+}
+
+
+.section-heading span {
+
+    color: var(--purple);
+
+    font-size: 10px;
+
+    letter-spacing: 3px;
+
+    font-weight: bold;
+
+}
+
+
+.section-heading h2 {
+
+    font-size: 35px;
+
+    margin-top: 10px;
+
+}
+
+
+.step-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 18px;
+
+}
+
+
+.step-card {
+
+    padding: 25px;
+
+    background: var(--card);
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 12px;
+
+}
+
+
+.step-number {
+
+    color: var(--purple);
+
+    font-size: 12px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.step-card h3 {
+
+    font-size: 17px;
+
+    margin-bottom: 8px;
+
+}
+
+
+.step-card p {
+
+    color: var(--text-muted);
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+}
+
+
+/* =====================================
+   PRIVACY
+===================================== */
+
+.privacy-box {
+
+    margin-top: 30px;
+
+    padding: 25px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 20px;
+
+    background:
+        rgba(34,197,94,0.04);
+
+    border:
+        1px solid rgba(34,197,94,0.15);
+
+    border-radius: 12px;
+
+}
+
+
+.privacy-icon {
+
+    font-size: 28px;
+
+}
+
+
+.privacy-box h3 {
+
+    font-size: 15px;
+
+    margin-bottom: 7px;
+
+}
+
+
+.privacy-box p {
+
+    color: var(--text-muted);
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+}
+
+
+/* =====================================
+   FOOTER
+===================================== */
+
+footer {
+
+    text-align: center;
+
+    padding: 35px;
+
+    border-top:
+        1px solid var(--border);
+
+}
+
+
+footer p {
+
+    color: #77778b;
+
+    font-size: 12px;
+
+    margin-bottom: 10px;
+
+}
+
+
+footer a {
+
+    color: var(--purple);
+
+    text-decoration: none;
+
+    font-size: 12px;
+
+}
+
+
+/* =====================================
+   MOBILE
+===================================== */
+
+@media (max-width: 700px) {
+
+    .navbar {
+
+        padding: 0 5%;
+
+    }
+
+
+    .container {
+
+        width: 92%;
+
+        padding-top: 45px;
+
+    }
+
+
+    .page-heading h1 {
+
+        font-size: 42px;
+
+    }
+
+
+    .step-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .splitter-box {
+
+        padding: 15px;
+
+    }
+
+
+    .privacy-box {
+
+        align-items: flex-start;
+
+    }
+
+}

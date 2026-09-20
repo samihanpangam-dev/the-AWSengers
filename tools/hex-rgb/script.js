@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let h=$('#input').value.replace('#','');let n=parseInt(h,16);$('#out').textContent=`rgb(${n>>16},${(n>>8)&255},${n&255})`}

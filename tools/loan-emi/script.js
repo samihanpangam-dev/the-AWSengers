@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let p=+$('#p').value,r=(+$('#r').value)/1200,n=(+$('#n').value)*12,m=p*r*(1+r)**n/((1+r)**n-1);$('#out').textContent=`Monthly EMI: ${m.toFixed(2)}\nTotal payment: ${(m*n).toFixed(2)}\nInterest: ${(m*n-p).toFixed(2)}`}

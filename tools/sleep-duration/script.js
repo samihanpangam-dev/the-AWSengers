@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=new Date('2000-01-01T'+$('#start').value),b=new Date('2000-01-02T'+$('#end').value);$('#out').textContent=`Sleep duration: ${((b-a)/3600000).toFixed(2)} hours`}

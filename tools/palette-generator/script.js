@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let n=Number($('#n').value)||5;$('#out').textContent=Array.from({length:n},(_,i)=>`hsl(${Math.round(i*360/n)},70%,55%)`).join('\n')}

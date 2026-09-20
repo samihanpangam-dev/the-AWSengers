@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([$('#input').value],{type:'text/plain'}));a.download='infinity-tool-box.txt';a.click()}

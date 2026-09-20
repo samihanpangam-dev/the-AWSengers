@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function f(n){let x=1;for(let i=2;i<=n;i++)x*=i;return x}$('#run').onclick=()=>{let n=+$('#n').value,r=+$('#r').value;$('#out').textContent=f(n)/f(n-r)}

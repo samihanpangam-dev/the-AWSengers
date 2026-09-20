@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=+$('#a').value,b=+$('#b').value;$('#out').textContent=a?`${(((b-a)/Math.abs(a))*100).toFixed(2)}%`: 'Undefined from zero'}

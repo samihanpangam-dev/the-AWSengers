@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let w=+$('#w').value,h=(+$('#h').value)/100;$('#out').textContent=`BMI: ${(w/(h*h)).toFixed(2)}`}

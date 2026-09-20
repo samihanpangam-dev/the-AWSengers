@@ -1,0 +1,1 @@
+let t=null,sec=1500;function draw(){let m=Math.floor(sec/60),s=sec%60;$('#out').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}$('#start').onclick=()=>{if(t)return;t=setInterval(()=>{if(sec>0)sec--;else{clearInterval(t);t=null}draw()},1000)};$('#reset').onclick=()=>{clearInterval(t);t=null;sec=Number($('#minutes').value||25)*60;draw()};draw()

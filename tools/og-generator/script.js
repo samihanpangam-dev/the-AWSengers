@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>$('#out').textContent=`<meta property="og:title" content="${esc($('#title').value)}">\n<meta property="og:description" content="${esc($('#desc').value)}">\n<meta property="og:url" content="${esc($('#url').value)}">`

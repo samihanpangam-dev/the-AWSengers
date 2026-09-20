@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let p=+$('#p').value,r=+$('#r').value,t=+$('#t').value;$('#out').textContent=`Simple interest: ${(p*r*t/100).toFixed(2)}\nAmount: ${(p+p*r*t/100).toFixed(2)}`}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let s=$('#input').value;$('#out').textContent=`Emails:\n${(s.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g)||[]).join('\n')||'None'}\n\nURLs:\n${(s.match(/https?:\/\/\S+/g)||[]).join('\n')||'None'}\n\nPhones:\n${(s.match(/\+?\d[\d\s-]{8,}\d/g)||[]).join('\n')||'None'}`}

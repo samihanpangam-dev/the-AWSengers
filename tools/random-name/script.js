@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=$('#input').value.split(/[,\n]/).map(x=>x.trim()).filter(Boolean);$('#out').textContent=a.length?a[Math.floor(Math.random()*a.length)]:'Add names first.'}

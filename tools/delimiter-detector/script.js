@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let s=$('#input').value;let ds=[',',';','\t','|'];let best=ds.map(d=>[d,(s.split('\n')[0].split(d).length)]).sort((a,b)=>b[1]-a[1])[0][0];$('#out').textContent=`Likely delimiter: ${best==='\t'?'TAB':best}`}

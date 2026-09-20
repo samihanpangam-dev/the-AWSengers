@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=$('#input').value.split('\n').filter(Boolean).map(x=>x.split('|').map(Number));let w=$('#weights').value.split(',').map(Number);let out=a.map(r=>r.reduce((s,v,i)=>s+v*(w[i]||1),0));$('#out').textContent=out.map((x,i)=>`Option ${i+1}: ${x}`).join('\n')}

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>$('#out').textContent=`<title>${esc($('#title').value)}</title>\n<meta name="description" content="${esc($('#desc').value)}">\n<meta name="robots" content="index,follow">`

@@ -1,0 +1,2 @@
+const $=s=>document.querySelector(s);const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#run').onclick=()=>{let a=$('#input').value.split('\n').filter(Boolean).map(x=>{let [t,u,i]=x.split('|');return {t,u:+u||0,i:+i||0,s:(+u||0)*(+i||0)}}).sort((a,b)=>b.s-a.s);$('#out').textContent=a.map(x=>`${x.s} — ${x.t}`).join('\n')}
